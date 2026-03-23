@@ -162,8 +162,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: page.color.withOpacity(0.15),
-              border: Border.all(color: page.color.withOpacity(0.3), width: 2),
+              color: page.color.withValues(alpha: 0.15),
+              border: Border.all(color: page.color.withValues(alpha: 0.3), width: 2),
             ),
             child: Icon(page.icon, size: 56, color: page.color),
           ),
@@ -203,9 +203,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.accentPurple.withOpacity(0.15),
+              color: AppTheme.accentPurple.withValues(alpha: 0.15),
               border: Border.all(
-                  color: AppTheme.accentPurple.withOpacity(0.3), width: 2),
+                  color: AppTheme.accentPurple.withValues(alpha: 0.3), width: 2),
             ),
             child: const Icon(Icons.cloud_upload_rounded,
                 size: 56, color: AppTheme.accentPurple),
@@ -251,13 +251,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.accentPurple.withOpacity(0.15)
+                ? AppTheme.accentPurple.withValues(alpha: 0.15)
                 : AppTheme.surfaceOverlay,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
                   ? AppTheme.accentPurple
-                  : AppTheme.dividerColor.withOpacity(0.5),
+                  : AppTheme.dividerColor.withValues(alpha: 0.5),
               width: isSelected ? 1.5 : 0.5,
             ),
           ),

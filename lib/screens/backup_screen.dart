@@ -249,10 +249,10 @@ class _BackupScreenState extends State<BackupScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.accentPurple.withOpacity(0.12) : AppTheme.surfaceOverlay,
+            color: isSelected ? AppTheme.accentPurple.withValues(alpha: 0.12) : AppTheme.surfaceOverlay,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppTheme.accentPurple : AppTheme.dividerColor.withOpacity(0.5),
+              color: isSelected ? AppTheme.accentPurple : AppTheme.dividerColor.withValues(alpha: 0.5),
               width: isSelected ? 1.5 : 0.5,
             ),
           ),

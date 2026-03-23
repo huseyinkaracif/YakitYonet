@@ -220,7 +220,7 @@ class FuelGaugePainter extends CustomPainter {
 
     // Center background circle (app icon will be placed on top via Stack)
     final iconPaint = Paint()
-      ..color = AppTheme.accentBlue.withOpacity(0.10)
+      ..color = AppTheme.accentBlue.withValues(alpha: 0.10)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 0.62, iconPaint);
   }

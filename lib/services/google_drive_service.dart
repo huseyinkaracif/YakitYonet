@@ -12,7 +12,6 @@ class GoogleDriveService {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [drive.DriveApi.driveAppdataScope],
-    clientId: dotenv.get('GOOGLE_CLIENT_ID_ANDROID'),
   );
 
   GoogleSignInAccount? _user;

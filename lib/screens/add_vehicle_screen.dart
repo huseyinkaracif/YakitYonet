@@ -222,7 +222,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                               color: AppTheme.surfaceOverlay,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppTheme.dividerColor.withOpacity(0.5),
+                                color: AppTheme.dividerColor.withValues(alpha: 0.5),
                               ),
                               image: _image != null
                                   ? DecorationImage(

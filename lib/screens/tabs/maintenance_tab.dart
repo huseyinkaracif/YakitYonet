@@ -70,7 +70,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.build_circle_rounded, size: 64, color: AppTheme.accentGreen.withOpacity(0.3)),
+          Icon(Icons.build_circle_rounded, size: 64, color: AppTheme.accentGreen.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text('Henüz bakım kaydı yok', style: TextStyle(color: AppTheme.textSecondary)),
         ],
@@ -96,7 +96,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           ),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppTheme.accentGreen.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: AppTheme.accentGreen.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
             child: const Icon(Icons.build_rounded, color: AppTheme.accentGreen),
           ),
         ],
@@ -177,7 +177,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: AppTheme.accentGreen.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: AppTheme.accentGreen.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: const Icon(Icons.handyman_rounded, color: AppTheme.accentGreen, size: 20),
             ),
             title: Text(r.title, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold)),

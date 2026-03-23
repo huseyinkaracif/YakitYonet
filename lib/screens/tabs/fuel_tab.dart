@@ -64,10 +64,10 @@ class _FuelTabState extends State<FuelTab> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentOrange.withOpacity(0.1),
+                          color: AppTheme.accentOrange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: AppTheme.accentOrange.withOpacity(0.3)),
+                              color: AppTheme.accentOrange.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -147,7 +147,7 @@ class _FuelTabState extends State<FuelTab> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.local_gas_station_rounded,
-              size: 56, color: AppTheme.accentBlue.withOpacity(0.4)),
+              size: 56, color: AppTheme.accentBlue.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
           const Text('Henüz yakıt kaydı yok',
               style: TextStyle(
@@ -207,16 +207,16 @@ class _FuelTabState extends State<FuelTab> {
       width: (MediaQuery.of(context).size.width - 42) / 2,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -331,7 +331,7 @@ class _FuelTabState extends State<FuelTab> {
                   4),
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppTheme.dividerColor.withOpacity(0.3),
+              color: AppTheme.dividerColor.withValues(alpha: 0.3),
               strokeWidth: 1,
             );
           },
@@ -391,7 +391,7 @@ class _FuelTabState extends State<FuelTab> {
           drawVerticalLine: false,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppTheme.dividerColor.withOpacity(0.3),
+              color: AppTheme.dividerColor.withValues(alpha: 0.3),
               strokeWidth: 1,
             );
           },
@@ -465,8 +465,8 @@ class _FuelTabState extends State<FuelTab> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppTheme.accentOrange.withOpacity(0.3),
-                  AppTheme.accentOrange.withOpacity(0.0),
+                  AppTheme.accentOrange.withValues(alpha: 0.3),
+                  AppTheme.accentOrange.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -516,7 +516,7 @@ class _FuelTabState extends State<FuelTab> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentBlue.withOpacity(0.12),
+                      color: AppTheme.accentBlue.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.local_gas_station_rounded,
@@ -591,7 +591,7 @@ class _FuelTabState extends State<FuelTab> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.accentCyan.withOpacity(0.12),
+                color: AppTheme.accentCyan.withValues(alpha: 0.12),
               ),
               child: const Icon(Icons.document_scanner_rounded,
                   size: 48, color: AppTheme.accentCyan),
