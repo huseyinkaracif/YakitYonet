@@ -27,6 +27,7 @@ class GoogleDriveService {
 
   Future<bool> signIn() async {
     try {
+      // Sadece driveAppdataScope isteniyor, .env'den almasına gerek yok
       _user = await _googleSignIn.signIn();
       return _user != null;
     } catch (e) {
@@ -41,7 +42,10 @@ class GoogleDriveService {
   }
 
   Future<drive.DriveApi?> _getDriveApi() async {
-    if (!await signIn()) return null;
+    if (_user == null) {
+      if (!await signIn()) return null;
+    }
+    
     final headers = await _user!.authHeaders;
     final client = _GoogleAuthClient(headers);
     return drive.DriveApi(client);
@@ -54,20 +58,22 @@ class GoogleDriveService {
 
       final dbPath = await DatabaseHelper.instance.getDatabasePath();
       final file = File(dbPath);
-      if (!await file.exists()) return false;
+      if (!await file.exists()) {
+        print("Backup file not found locally.");
+        return false;
+      }
 
-      // Find if file already exists in appDataFolder
       final existingFiles = await driveApi.files.list(
         spaces: 'appDataFolder',
         q: "name = 'yakit_yonet_backup.db'",
       );
 
-      final media = drive.Media(file.openRead(), await file.length());
+      final media = drive.Media(file.openRead(), file.lengthSync());
 
       if (existingFiles.files != null && existingFiles.files!.isNotEmpty) {
         // Update existing
         final fileId = existingFiles.files!.first.id!;
-        final updateFile = drive.File()..name = 'yakit_yonet_backup.db';
+        final updateFile = drive.File(); // Sadece güncellenecek, ismi aynı kalır
         await driveApi.files.update(updateFile, fileId, uploadMedia: media);
       } else {
         // Create new
@@ -94,32 +100,35 @@ class GoogleDriveService {
         q: "name = 'yakit_yonet_backup.db'",
       );
 
-      if (existingFiles.files == null || existingFiles.files!.isEmpty) return false;
+      if (existingFiles.files == null || existingFiles.files!.isEmpty) {
+        print("No backup file found on Drive.");
+        return false;
+      }
 
       final fileId = existingFiles.files!.first.id!;
       final response = await driveApi.files.get(
         fileId,
         downloadOptions: drive.DownloadOptions.fullMedia,
-      ) as drive.Media;
+      ) as http.Response;
 
       final dbPath = await DatabaseHelper.instance.getDatabasePath();
       final oldDbFile = File(dbPath);
       
-      // Ensure directory exists
       final dir = Directory(p.dirname(dbPath));
       if (!await dir.exists()) await dir.create(recursive: true);
 
       // We need to close the current database before overwriting
       await DatabaseHelper.instance.close();
 
-      final List<int> dataStore = [];
-      await response.stream.forEach((data) => dataStore.addAll(data));
       final tempFile = File('$dbPath.tmp');
-      await tempFile.writeAsBytes(dataStore);
+      await tempFile.writeAsBytes(response.bodyBytes);
 
       // Replace old DB
       if (await oldDbFile.exists()) await oldDbFile.delete();
       await tempFile.rename(dbPath);
+      
+      // Re-init database
+      await DatabaseHelper.instance.database;
 
       return true;
     } catch (e) {
@@ -137,7 +146,6 @@ class _GoogleAuthClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers.addAll(_headers);
-    return _client.send(request);
+    return _client.send(request..headers.addAll(_headers));
   }
 }
