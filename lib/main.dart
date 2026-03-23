@@ -44,7 +44,7 @@ class YakitYonetApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: dotenv.get('APP_NAME', fallback: 'Yakıt Yönetimi'),
+      title: dotenv.get('APP_NAME', fallback: 'Yakıt Yönet'),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       initialRoute: '/splash',

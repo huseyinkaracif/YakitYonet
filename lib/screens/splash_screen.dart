@@ -57,8 +57,9 @@ class _SplashScreenState extends State<SplashScreen>
     _scaleController.forward();
     _fadeController.forward();
     await Future.delayed(const Duration(milliseconds: 400));
-    _fuelController.forward();
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await _fuelController.forward();
+    // Animasyon tam doldu, kısa bir bekleme sonra geçiş yap
+    await Future.delayed(const Duration(milliseconds: 400));
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/home');
     }
@@ -102,10 +103,26 @@ class _SplashScreenState extends State<SplashScreen>
                       child: SizedBox(
                         width: 140,
                         height: 140,
-                        child: CustomPaint(
-                          painter: FuelGaugePainter(
-                            progress: _fuelAnimation.value,
-                          ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CustomPaint(
+                              size: const Size(140, 140),
+                              painter: FuelGaugePainter(
+                                progress: _fuelAnimation.value,
+                              ),
+                            ),
+                            // App icon in the center
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.asset(
+                                'assets/images/app_icon.png',
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -201,44 +218,11 @@ class FuelGaugePainter extends CustomPainter {
       progressPaint,
     );
 
-    // Center fuel pump icon area
+    // Center background circle (app icon will be placed on top via Stack)
     final iconPaint = Paint()
-      ..color = AppTheme.accentBlue.withOpacity(0.15)
+      ..color = AppTheme.accentBlue.withOpacity(0.10)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 0.6, iconPaint);
-
-    // Draw fuel pump symbol
-    final pumpPaint = Paint()
-      ..color = AppTheme.accentBlue
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    // Pump body
-    final pumpRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(center.dx - 6, center.dy),
-        width: 28,
-        height: 34,
-      ),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(pumpRect, pumpPaint);
-
-    // Pump handle
-    final handlePath = Path()
-      ..moveTo(center.dx + 8, center.dy - 17)
-      ..lineTo(center.dx + 20, center.dy - 17)
-      ..lineTo(center.dx + 20, center.dy - 4)
-      ..lineTo(center.dx + 14, center.dy + 4);
-    canvas.drawPath(handlePath, pumpPaint);
-
-    // Nozzle dot
-    canvas.drawCircle(
-      Offset(center.dx + 14, center.dy + 6),
-      2.5,
-      Paint()..color = AppTheme.accentCyan,
-    );
+    canvas.drawCircle(center, radius * 0.62, iconPaint);
   }
 
   @override

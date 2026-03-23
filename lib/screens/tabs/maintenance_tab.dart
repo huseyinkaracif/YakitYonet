@@ -56,10 +56,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddMaintenanceSheet,
         backgroundColor: AppTheme.accentGreen,
-        child: const Icon(Icons.add_rounded, color: AppTheme.primaryDark),
+        icon: const Icon(Icons.add_rounded, color: AppTheme.primaryDark),
+        label: const Text('Kayıt Ekle'),
       ),
     );
   }

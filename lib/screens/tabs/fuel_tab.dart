@@ -46,74 +46,98 @@ class _FuelTabState extends State<FuelTab> {
           child: CircularProgressIndicator(color: AppTheme.accentBlue));
     }
 
-    return Stack(
-      children: [
-        _records.isEmpty
-            ? _buildEmptyState()
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Stats Grid
-                    _buildStatsGrid(),
-                    const SizedBox(height: 16),
-                    // Info note
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentOrange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: AppTheme.accentOrange.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline_rounded,
-                              color: AppTheme.accentOrange, size: 18),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Not: Tüketim hesaplamalarının doğruluğu amacıyla son akaryakıt alımı toplam maliyet ve miktara dahil edilmemiştir.',
-                              style: TextStyle(
-                                color: AppTheme.accentOrange,
-                                fontSize: 11,
+    return Container(
+      color: AppTheme.primaryDark,
+      child: Stack(
+        children: [
+          _records.isEmpty
+              ? _buildEmptyState()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Stats Grid
+                      _buildStatsGrid(),
+                      const SizedBox(height: 16),
+                      // Info note
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: AppTheme.accentOrange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline_rounded,
+                                color: AppTheme.accentOrange, size: 18),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Not: Tüketim hesaplamalarının doğruluğu amacıyla son akaryakıt alımı toplam maliyet ve miktara dahil edilmemiştir.',
+                                style: TextStyle(
+                                  color: AppTheme.accentOrange,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Chart 1: Price vs Quantity
-                    _buildChartCard(
-                      'Fiyat & Akaryakıt Miktarı',
-                      _buildPriceQuantityChart(),
-                    ),
-                    const SizedBox(height: 16),
-                    // Chart 2: Consumption
-                    _buildChartCard(
-                      'TL/KM & L/100KM Tüketim',
-                      _buildConsumptionChart(),
-                    ),
-                    const SizedBox(height: 16),
-                    // Records list
-                    _buildRecordsList(),
-                  ],
+                      const SizedBox(height: 20),
+                      // Chart 1: Price vs Quantity
+                      _buildChartCard(
+                        'Fiyat & Akaryakıt Miktarı',
+                        _buildPriceQuantityChart(),
+                      ),
+                      const SizedBox(height: 16),
+                      // Chart 2: Consumption
+                      _buildChartCard(
+                        'TL/KM & L/100KM Tüketim',
+                        _buildConsumptionChart(),
+                      ),
+                      const SizedBox(height: 16),
+                      // Records list
+                      _buildRecordsList(),
+                    ],
+                  ),
                 ),
-              ),
-        // FAB
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'fuel_fab',
-            onPressed: () => _showAddFuelDialog(),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Yakıt Ekle'),
+          // FABs
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Fiş Tara (pasif – kamera entegrasyonu ileriye)
+                FloatingActionButton.extended(
+                  heroTag: 'scan_fab',
+                  backgroundColor: AppTheme.surfaceCard,
+                  foregroundColor: AppTheme.accentCyan,
+                  elevation: 4,
+                  onPressed: _showScanComingSoon,
+                  icon: const Icon(Icons.document_scanner_rounded),
+                  label: const Text(
+                    'Fiş Tara',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Yakıt Ekle
+                FloatingActionButton.extended(
+                  heroTag: 'fuel_fab',
+                  onPressed: () => _showAddFuelDialog(),
+                  backgroundColor: AppTheme.accentOrange,
+                  icon: const Icon(Icons.add_rounded, color: AppTheme.primaryDark),
+                  label: const Text('Yakıt Ekle'),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -548,6 +572,61 @@ class _FuelTabState extends State<FuelTab> {
           },
         ),
       ],
+    );
+  }
+
+  void _showScanComingSoon() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.accentCyan.withOpacity(0.12),
+              ),
+              child: const Icon(Icons.document_scanner_rounded,
+                  size: 48, color: AppTheme.accentCyan),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Fiş Tarama',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Kamera ile akaryakıt fişinizi tarayarak otomatik kayıt oluşturma özelliği yakında geliyor!\n\nŞimdilik "Yakıt Ekle" butonunu kullanabilirsiniz.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 14,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx),
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('Anladım'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
