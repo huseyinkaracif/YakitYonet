@@ -193,7 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildBackupPage() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -231,13 +231,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          ...[
-            _buildBackupOption('off', 'Kapalı', Icons.cloud_off_rounded),
-            _buildBackupOption(
-                'weekly', 'Haftalık', Icons.date_range_rounded),
-            _buildBackupOption(
-                'monthly', 'Aylık', Icons.calendar_month_rounded),
-          ],
+          _buildBackupOption('off', 'Kapalı', Icons.cloud_off_rounded),
+          _buildBackupOption('weekly', 'Haftalık', Icons.date_range_rounded),
+          _buildBackupOption('monthly', 'Aylık', Icons.calendar_month_rounded),
         ],
       ),
     );
