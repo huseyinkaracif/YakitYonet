@@ -63,17 +63,18 @@ class GoogleDriveService {
       );
 
       final media = drive.Media(file.openRead(), await file.length());
-      final driveFile = drive.File()
-        ..name = 'yakit_yonet_backup.db'
-        ..parents = ['appDataFolder'];
 
       if (existingFiles.files != null && existingFiles.files!.isNotEmpty) {
         // Update existing
         final fileId = existingFiles.files!.first.id!;
-        await driveApi.files.update(driveFile, fileId, uploadMedia: media);
+        final updateFile = drive.File()..name = 'yakit_yonet_backup.db';
+        await driveApi.files.update(updateFile, fileId, uploadMedia: media);
       } else {
         // Create new
-        await driveApi.files.create(driveFile, uploadMedia: media);
+        final createFile = drive.File()
+          ..name = 'yakit_yonet_backup.db'
+          ..parents = ['appDataFolder'];
+        await driveApi.files.create(createFile, uploadMedia: media);
       }
 
       return true;

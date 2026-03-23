@@ -157,12 +157,7 @@ class _FuelTabState extends State<FuelTab> {
           const SizedBox(height: 8),
           const Text('İlk yakıt alımınızı kaydedin',
               style: TextStyle(color: AppTheme.textHint, fontSize: 13)),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _showAddFuelDialog(),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Yakıt Ekle'),
-          ),
+          const SizedBox(height: 24)
         ],
       ),
     );

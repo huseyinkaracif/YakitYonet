@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
@@ -397,10 +400,28 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                         child: Stack(
                           children: [
                             Center(
-                              child: Icon(
-                                Icons.directions_car_rounded,
-                                size: 72,
-                                color: fuelColor.withValues(alpha: 0.35),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.directions_car_rounded,
+                                    size: 48,
+                                    color: fuelColor.withValues(alpha: 0.35),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ElevatedButton.icon(
+                                    onPressed: () => _showAddPhotoDialog(vehicle),
+                                    icon: const Icon(Icons.add_a_photo_rounded, size: 16),
+                                    label: const Text('Fotoğraf Ekle', style: TextStyle(fontSize: 12)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.surfaceCard,
+                                      foregroundColor: AppTheme.textPrimary,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      minimumSize: Size.zero,
+                                      elevation: 2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             Positioned(
@@ -767,6 +788,123 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         );
       }
     }
+  }
+
+  Future<void> _pickAndSaveImageForVehicle(Vehicle vehicle, ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source, maxWidth: 1200, imageQuality: 85);
+      if (pickedFile != null) {
+        final image = File(pickedFile.path);
+        final dir = await getApplicationDocumentsDirectory();
+        final vehicleImagesDir = Directory('${dir.path}/vehicle_images');
+        if (!await vehicleImagesDir.exists()) {
+          await vehicleImagesDir.create(recursive: true);
+        }
+        final fileName = 'vehicle_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
+        final savedImage = await image.copy('${vehicleImagesDir.path}/$fileName');
+        
+        final updatedVehicle = Vehicle(
+          id: vehicle.id,
+          name: vehicle.name,
+          currentKm: vehicle.currentKm,
+          fuelType: vehicle.fuelType,
+          tankCapacity: vehicle.tankCapacity,
+          imagePath: savedImage.path,
+        );
+        
+        await DatabaseHelper.instance.updateVehicle(updatedVehicle);
+        await _loadVehicles();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Fotoğraf başarıyla eklendi')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: Fotoğraf eklenemedi ($e)')),
+        );
+      }
+    }
+  }
+
+  void _showAddPhotoDialog(Vehicle vehicle) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text('Fotoğraf Ekle',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  )),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentBlue.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded,
+                      color: AppTheme.accentBlue),
+                ),
+                title: const Text('Kamera',
+                    style: TextStyle(color: AppTheme.textPrimary)),
+                subtitle: const Text('Fotoğraf çek',
+                    style: TextStyle(color: AppTheme.textSecondary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSaveImageForVehicle(vehicle, ImageSource.camera);
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.photo_library_rounded,
+                      color: AppTheme.accentGreen),
+                ),
+                title: const Text('Galeri',
+                    style: TextStyle(color: AppTheme.textPrimary)),
+                subtitle: const Text('Galeriden seç',
+                    style: TextStyle(color: AppTheme.textSecondary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSaveImageForVehicle(vehicle, ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _importData() async {

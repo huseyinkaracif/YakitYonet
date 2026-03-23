@@ -84,8 +84,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
       Icon(Icons.security_rounded, size: 56, color: AppTheme.accentPurple.withValues(alpha: 0.4)),
       const SizedBox(height: 16),
       const Text('Henüz sigorta/vergi kaydı yok', style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w500)),
-      const SizedBox(height: 24),
-      ElevatedButton.icon(onPressed: _showAddDialog, icon: const Icon(Icons.add_rounded), label: const Text('Kayıt Ekle')),
+      const SizedBox(height: 24)
     ]));
   }
 

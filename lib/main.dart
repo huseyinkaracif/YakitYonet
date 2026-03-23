@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -14,6 +15,8 @@ import 'services/google_drive_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await initializeDateFormatting('tr_TR', null);
   
   // Load environment variables
   try {
