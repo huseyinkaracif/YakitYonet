@@ -78,15 +78,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0A1628),
-              AppTheme.primaryDark,
-              Color(0xFF0A1628),
-            ],
-          ),
+          color: Color(0xFFFAF9F6), // warm white background
         ),
         child: Center(
           child: Column(
@@ -133,8 +125,9 @@ class _SplashScreenState extends State<SplashScreen>
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppTheme.accentGradient.createShader(bounds),
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFFB45309), Color(0xFFD97706)],
+                  ).createShader(bounds),
                   child: const Text(
                     'YakıtYönet',
                     style: TextStyle(
@@ -152,7 +145,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: const Text(
                   'Yakıt & Araç Yönetimi',
                   style: TextStyle(
-                    color: AppTheme.textSecondary,
+                    color: Color(0xFF78716C), // stone / textSecondary
                     fontSize: 14,
                     letterSpacing: 1.5,
                   ),
@@ -166,7 +159,7 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 32,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentBlue),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD97706)),
                   ),
                 ),
               ),
@@ -190,7 +183,7 @@ class FuelGaugePainter extends CustomPainter {
 
     // Arka plan dairesi (boş tank)
     final bgPaint = Paint()
-      ..color = AppTheme.surfaceCard
+      ..color = const Color(0xFFE5E1D8) // warm border / borderSubtle
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
     canvas.drawCircle(center, radius, bgPaint);
@@ -228,7 +221,7 @@ class FuelGaugePainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [AppTheme.accentBlue, AppTheme.accentCyan, AppTheme.accentGreen],
+          colors: [Color(0xFFB45309), Color(0xFFD97706), Color(0xFFFBBF24)],
         ).createShader(Rect.fromCircle(center: center, radius: radius))
         ..style = PaintingStyle.fill;
 
@@ -239,7 +232,7 @@ class FuelGaugePainter extends CustomPainter {
     // Dış halka parlaması
     final ringPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [AppTheme.accentBlue, AppTheme.accentCyan],
+        colors: [Color(0xFFD97706), Color(0xFFFBBF24)],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
@@ -247,7 +240,7 @@ class FuelGaugePainter extends CustomPainter {
 
     // İkon için iç kısımdan suyun geçmesini engellemek amaçlı arka plan rengiyle dolgu
     final cutoutPaint = Paint()
-      ..color = AppTheme.primaryDark
+      ..color = const Color(0xFFFAF9F6) // warm white — matches background
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 0.65, cutoutPaint);
   }

@@ -17,24 +17,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       icon: Icons.local_gas_station_rounded,
-      title: 'YakıtYönet\'e Hoş Geldiniz!',
+      title: 'YakıtYönet\'e\nHoş Geldiniz',
       description:
           'Araçlarınızın yakıt tüketimini, bakımlarını ve masraflarını kolayca takip edin.',
-      color: AppTheme.accentBlue,
+      color: AppTheme.accent,
     ),
     OnboardingPage(
       icon: Icons.directions_car_rounded,
-      title: 'Araçlarınızı Ekleyin',
+      title: 'Araçlarınızı\nEkleyin',
       description:
-          'Birden fazla araç ekleyerek her birinin masraflarını ayrı ayrı takip edin. Detaylı grafiklerle tüketim verilerinizi görselleştirin.',
-      color: AppTheme.accentGreen,
+          'Birden fazla araç ekleyerek her birinin masraflarını ayrı ayrı takip edin.',
+      color: AppTheme.maintColor,
     ),
     OnboardingPage(
       icon: Icons.bar_chart_rounded,
-      title: 'Detaylı İstatistikler',
+      title: 'Detaylı\nİstatistikler',
       description:
-          'TL/KM, L/100KM tüketim verileri, bakım maliyetleri ve sigorta giderlerini analiz edin.',
-      color: AppTheme.accentOrange,
+          'TL/KM, L/100KM verileri, bakım maliyetleri ve sigorta giderlerini analiz edin.',
+      color: AppTheme.successColor,
     ),
   ];
 
@@ -56,96 +56,121 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Skip button
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: _completeOnboarding,
-                  child: Text(
-                    'Atla',
+      backgroundColor: AppTheme.bgMain,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top bar with skip
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
+              child: Row(
+                children: [
+                  // Brand mark
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.local_gas_station_rounded,
+                        size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'YakıtYönet',
                     style: TextStyle(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textPrimary,
                       fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _completeOnboarding,
+                    child: const Text(
+                      'Atla',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              // Page view
-              Expanded(
-                child: _currentPage < _pages.length
-                    ? PageView.builder(
-                        controller: _pageController,
-                        itemCount: _pages.length + 1,
-                        onPageChanged: (index) {
-                          setState(() => _currentPage = index);
-                        },
-                        itemBuilder: (context, index) {
-                          if (index < _pages.length) {
-                            return _buildInfoPage(_pages[index]);
-                          } else {
-                            return _buildBackupPage();
-                          }
-                        },
-                      )
-                    : _buildBackupPage(),
+            ),
+
+            // Page view
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _pages.length + 1,
+                onPageChanged: (index) =>
+                    setState(() => _currentPage = index),
+                itemBuilder: (context, index) {
+                  if (index < _pages.length) {
+                    return _buildInfoPage(_pages[index]);
+                  } else {
+                    return _buildBackupPage();
+                  }
+                },
               ),
-              // Dots and button
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    // Page dots
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _pages.length + 1,
-                        (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentPage == index ? 24 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
-                            color: _currentPage == index
-                                ? AppTheme.accentBlue
-                                : AppTheme.dividerColor,
-                          ),
+            ),
+
+            // Dots + button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+              child: Column(
+                children: [
+                  // Dots
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _pages.length + 1,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: _currentPage == index ? 20 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          color: _currentPage == index
+                              ? AppTheme.accent
+                              : AppTheme.borderSubtle,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    // Next / Start button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_currentPage < _pages.length) {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          } else {
-                            _completeOnboarding();
-                          }
-                        },
-                        child: Text(
-                          _currentPage < _pages.length
-                              ? 'Devam'
-                              : 'Başlayalım!',
-                          style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_currentPage < _pages.length) {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        } else {
+                          _completeOnboarding();
+                        }
+                      },
+                      child: Text(
+                        _currentPage < _pages.length
+                            ? 'Devam'
+                            : 'Başlayalım!',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -153,38 +178,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildInfoPage(OnboardingPage page) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: page.color.withValues(alpha: 0.15),
-              border: Border.all(color: page.color.withValues(alpha: 0.3), width: 2),
+              color: page.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                  color: page.color.withValues(alpha: 0.2), width: 1),
             ),
-            child: Icon(page.icon, size: 56, color: page.color),
+            child: Icon(page.icon, size: 36, color: page.color),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
           Text(
             page.title,
-            textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
               color: AppTheme.textPrimary,
+              height: 1.15,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             page.description,
-            textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 16,
               color: AppTheme.textSecondary,
-              height: 1.5,
+              height: 1.6,
             ),
           ),
         ],
@@ -194,95 +221,117 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildBackupPage() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.accentPurple.withValues(alpha: 0.15),
-              border: Border.all(
-                  color: AppTheme.accentPurple.withValues(alpha: 0.3), width: 2),
+              color: AppTheme.accentLight,
+              borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(Icons.cloud_upload_rounded,
-                size: 56, color: AppTheme.accentPurple),
+                size: 36, color: AppTheme.accent),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
           const Text(
-            'Otomatik Yedekleme',
-            textAlign: TextAlign.center,
+            'Otomatik\nYedekleme',
             style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
               color: AppTheme.textPrimary,
+              height: 1.15,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
             'Verilerinizi Google Drive\'a otomatik olarak yedekleyin. Daha sonra ayarlardan değiştirebilirsiniz.',
-            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
               color: AppTheme.textSecondary,
-              height: 1.5,
+              height: 1.6,
             ),
           ),
-          const SizedBox(height: 32),
-          _buildBackupOption('off', 'Kapalı', Icons.cloud_off_rounded),
-          _buildBackupOption('weekly', 'Haftalık', Icons.date_range_rounded),
-          _buildBackupOption('monthly', 'Aylık', Icons.calendar_month_rounded),
+          const SizedBox(height: 28),
+          _buildBackupOption('off', 'Kapalı',
+              Icons.cloud_off_rounded, 'Otomatik yedekleme yapılmaz'),
+          _buildBackupOption('weekly', 'Haftalık',
+              Icons.date_range_rounded, 'Her hafta otomatik yedeklenir'),
+          _buildBackupOption('monthly', 'Aylık',
+              Icons.calendar_month_rounded, 'Her ay otomatik yedeklenir'),
         ],
       ),
     );
   }
 
-  Widget _buildBackupOption(String value, String label, IconData icon) {
+  Widget _buildBackupOption(
+      String value, String label, IconData icon, String desc) {
     final isSelected = _backupPreference == value;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => setState(() => _backupPreference = value),
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.15)
-                : AppTheme.surfaceOverlay,
+            color: isSelected ? AppTheme.accentLight : AppTheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? AppTheme.accentPurple
-                  : AppTheme.dividerColor.withValues(alpha: 0.5),
-              width: isSelected ? 1.5 : 0.5,
+              color:
+                  isSelected ? AppTheme.accent : AppTheme.borderSubtle,
+              width: isSelected ? 1.5 : 1,
             ),
           ),
           child: Row(
             children: [
-              Icon(icon,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? AppTheme.accentPurple
-                      : AppTheme.textSecondary),
-              const SizedBox(width: 16),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? AppTheme.textPrimary
-                      : AppTheme.textSecondary,
+                      ? AppTheme.accent.withValues(alpha: 0.15)
+                      : AppTheme.surfaceAlt,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon,
+                    color: isSelected
+                        ? AppTheme.accent
+                        : AppTheme.textSecondary,
+                    size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? AppTheme.textPrimary
+                            : AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      desc,
+                      style: const TextStyle(
+                        color: AppTheme.textHint,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
               if (isSelected)
                 const Icon(Icons.check_circle_rounded,
-                    color: AppTheme.accentPurple, size: 22),
+                    color: AppTheme.accent, size: 20),
             ],
           ),
         ),

@@ -23,7 +23,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   List<Vehicle> _vehicles = [];
   Map<int, Map<String, dynamic>> _fuelStats = {};
   bool _loading = true;
-  bool _isBannerView = true; // true = banner (eski), false = liste
+  bool _isBannerView = true;
 
   @override
   void initState() {
@@ -37,8 +37,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     final stats = <int, Map<String, dynamic>>{};
     for (var v in vehicles) {
       if (v.id != null) {
-        stats[v.id!] =
-            await DatabaseHelper.instance.getVehicleFuelStats(v.id!);
+        stats[v.id!] = await DatabaseHelper.instance.getVehicleFuelStats(v.id!);
       }
     }
     setState(() {
@@ -51,271 +50,281 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App Bar
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  children: [
-                    ShaderMask(
-                      shaderCallback: (bounds) =>
-                          AppTheme.accentGradient.createShader(bounds),
-                      child: const Icon(Icons.local_gas_station_rounded,
-                          size: 28, color: Colors.white),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Araçlarım',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ),
-                    // View toggle button
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: IconButton(
-                        key: ValueKey(_isBannerView),
-                        tooltip: _isBannerView ? 'Liste görünümü' : 'Kart görünümü',
-                        icon: Icon(
-                          _isBannerView
-                              ? Icons.view_list_rounded
-                              : Icons.dashboard_rounded,
-                          color: AppTheme.accentCyan,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          setState(() => _isBannerView = !_isBannerView);
-                        },
-                      ),
-                    ),
-                    // Menu button
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert_rounded,
-                          color: AppTheme.textSecondary),
-                      color: AppTheme.surfaceCard,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'stats':
-                            Navigator.pushNamed(context, '/statistics');
-                            break;
-                          case 'export':
-                            _exportData();
-                            break;
-                          case 'import':
-                            _importData();
-                            break;
-                          case 'backup':
-                            Navigator.pushNamed(context, '/backup');
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'stats',
-                          child: Row(
-                            children: [
-                              Icon(Icons.bar_chart_rounded,
-                                  color: AppTheme.accentBlue, size: 20),
-                              SizedBox(width: 12),
-                              Text('Genel İstatistikler',
-                                  style:
-                                      TextStyle(color: AppTheme.textPrimary)),
-                            ],
+      backgroundColor: AppTheme.bgMain,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildAppBar(),
+            _buildGreeting(),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppTheme.accent),
+                    )
+                  : _vehicles.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                          onRefresh: _loadVehicles,
+                          color: AppTheme.accent,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: _isBannerView
+                                ? ListView.builder(
+                                    key: const ValueKey('banner'),
+                                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                                    itemCount: _vehicles.length,
+                                    itemBuilder: (context, index) =>
+                                        _buildBannerCard(_vehicles[index]),
+                                  )
+                                : ListView.builder(
+                                    key: const ValueKey('list'),
+                                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                                    itemCount: _vehicles.length,
+                                    itemBuilder: (context, index) =>
+                                        _buildListRow(_vehicles[index]),
+                                  ),
                           ),
                         ),
-                        const PopupMenuItem(
-                          value: 'export',
-                          child: Row(
-                            children: [
-                              Icon(Icons.upload_rounded,
-                                  color: AppTheme.accentGreen, size: 20),
-                              SizedBox(width: 12),
-                              Text('Dışa Aktar',
-                                  style:
-                                      TextStyle(color: AppTheme.textPrimary)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'import',
-                          child: Row(
-                            children: [
-                              Icon(Icons.download_rounded,
-                                  color: AppTheme.accentOrange, size: 20),
-                              SizedBox(width: 12),
-                              Text('İçe Aktar',
-                                  style:
-                                      TextStyle(color: AppTheme.textPrimary)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'backup',
-                          child: Row(
-                            children: [
-                              Icon(Icons.cloud_rounded,
-                                  color: AppTheme.accentPurple, size: 20),
-                              SizedBox(width: 12),
-                              Text('Yedekleme',
-                                  style:
-                                      TextStyle(color: AppTheme.textPrimary)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Add button
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.accentGradient,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.add_rounded,
-                            color: AppTheme.primaryDark),
-                        onPressed: () async {
-                          await Navigator.pushNamed(context, '/add-vehicle');
-                          _loadVehicles();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Greeting section
-              StreamBuilder<GoogleSignInAccount?>(
-                stream: GoogleDriveService.instance.onUserChanged,
-                initialData: GoogleDriveService.instance.currentUser,
-                builder: (context, snapshot) {
-                  final user = snapshot.data;
-                  final name = user?.displayName ?? 'Misafir';
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Merhaba, $name 👋',
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user != null
-                              ? 'Verileriniz bulut ile senkronize ediliyor.'
-                              : 'Yedekleme için Google ile giriş yapın.',
-                            style: const TextStyle(
-                              color: AppTheme.textHint,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              ),
-              const SizedBox(height: 12),
-              // Vehicle List
-              Expanded(
-                child: _loading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.accentBlue,
-                        ),
-                      )
-                    : _vehicles.isEmpty
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            onRefresh: _loadVehicles,
-                            color: AppTheme.accentBlue,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 350),
-                              child: _isBannerView
-                                  ? ListView.builder(
-                                      key: const ValueKey('banner'),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      itemCount: _vehicles.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildBannerCard(_vehicles[index]);
-                                      },
-                                    )
-                                  : ListView.builder(
-                                      key: const ValueKey('list'),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      itemCount: _vehicles.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildListRow(_vehicles[index]);
-                                      },
-                                    ),
-                            ),
-                          ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  // ── App Bar ────────────────────────────────────────────────────────────────
+
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+      child: Row(
         children: [
+          // Logo mark
           Container(
-            width: 100,
-            height: 100,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.accentBlue.withValues(alpha: 0.1),
+              color: AppTheme.accent,
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: const Icon(Icons.directions_car_rounded,
-                size: 48, color: AppTheme.accentBlue),
+            child: const Icon(Icons.local_gas_station_rounded,
+                size: 20, color: Colors.white),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Henüz araç eklenmemiş',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Sağ üstteki + butonuna tıklayarak\nilk aracınızı ekleyin.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Araçlarım',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
+          // View toggle
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
+              key: ValueKey(_isBannerView),
+              tooltip: _isBannerView ? 'Liste görünümü' : 'Kart görünümü',
+              icon: Icon(
+                _isBannerView ? Icons.view_list_rounded : Icons.dashboard_rounded,
+                color: AppTheme.textSecondary,
+                size: 22,
+              ),
+              onPressed: () => setState(() => _isBannerView = !_isBannerView),
+            ),
+          ),
+          // Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded,
+                color: AppTheme.textSecondary, size: 22),
+            onSelected: (value) {
+              switch (value) {
+                case 'stats':
+                  Navigator.pushNamed(context, '/statistics');
+                  break;
+                case 'export':
+                  _exportData();
+                  break;
+                case 'import':
+                  _importData();
+                  break;
+                case 'backup':
+                  Navigator.pushNamed(context, '/backup');
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              _menuItem('stats', 'Genel İstatistikler',
+                  Icons.bar_chart_rounded, AppTheme.accent),
+              _menuItem('export', 'Dışa Aktar',
+                  Icons.upload_rounded, AppTheme.successColor),
+              _menuItem('import', 'İçe Aktar',
+                  Icons.download_rounded, AppTheme.maintColor),
+              _menuItem('backup', 'Yedekleme',
+                  Icons.cloud_rounded, AppTheme.insurColor),
+            ],
+          ),
+          // Add button
+          GestureDetector(
+            onTap: () async {
+              await Navigator.pushNamed(context, '/add-vehicle');
+              _loadVehicles();
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.accent,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+            ),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
     );
   }
 
-  // ── BANNER CARD (eski zenginleştirilmiş görünüm) ──────────────────────────
+  PopupMenuItem<String> _menuItem(
+      String value, String label, IconData icon, Color color) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 12),
+          Text(label,
+              style: const TextStyle(
+                  color: AppTheme.textPrimary, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  // ── Greeting ───────────────────────────────────────────────────────────────
+
+  Widget _buildGreeting() {
+    return StreamBuilder<GoogleSignInAccount?>(
+      stream: GoogleDriveService.instance.onUserChanged,
+      initialData: GoogleDriveService.instance.currentUser,
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Merhaba, ${user?.displayName ?? 'Misafir'}',
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user != null
+                          ? 'Verileriniz bulut ile senkronize.'
+                          : 'Yedekleme için Google ile giriş yapın.',
+                      style: const TextStyle(
+                        color: AppTheme.textHint,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (user != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.successColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Text(
+                        'Senkronize',
+                        style: TextStyle(
+                          color: AppTheme.successColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Empty State ────────────────────────────────────────────────────────────
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppTheme.accentLight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(Icons.directions_car_rounded,
+                  size: 40, color: AppTheme.accent),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Henüz araç eklenmemiş',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Sağ üstteki + butonuna tıklayarak\nilk aracınızı ekleyin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Banner Card ────────────────────────────────────────────────────────────
+
   Widget _buildBannerCard(Vehicle vehicle) {
     final stats = _fuelStats[vehicle.id] ?? {};
     final costPerKm = (stats['costPerKm'] as num?)?.toDouble() ?? 0.0;
@@ -331,16 +340,26 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         _loadVehicles();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 18),
-        decoration: AppTheme.cardDecoration,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.borderSubtle, width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x081C1917),
+              blurRadius: 12,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
         child: Column(
           children: [
-            // Image / placeholder
+            // Vehicle image
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
               child: SizedBox(
-                height: 160,
+                height: 156,
                 width: double.infinity,
                 child: vehicle.imagePath != null &&
                         File(vehicle.imagePath!).existsSync()
@@ -351,20 +370,20 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                             File(vehicle.imagePath!),
                             fit: BoxFit.cover,
                           ),
-                          // gradient overlay
+                          // Bottom gradient for text legibility
                           Container(
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.55),
+                                  Color(0xCC000000),
                                 ],
+                                stops: [0.4, 1.0],
                               ),
                             ),
                           ),
-                          // name overlay
                           Positioned(
                             bottom: 12,
                             left: 14,
@@ -372,31 +391,20 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                               vehicle.name,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(blurRadius: 8, color: Colors.black54),
-                                ],
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          // fuel badge
                           Positioned(
                             bottom: 12,
                             right: 14,
-                            child: _fuelBadge(vehicle.fuelType, fuelColor),
+                            child: _fuelBadgeLight(vehicle.fuelType, fuelColor),
                           ),
                         ],
                       )
                     : Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              fuelColor.withValues(alpha: 0.18),
-                              AppTheme.surfaceCard,
-                            ],
-                          ),
-                        ),
+                        color: AppTheme.surfaceAlt,
                         child: Stack(
                           children: [
                             Center(
@@ -405,20 +413,38 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                                 children: [
                                   Icon(
                                     Icons.directions_car_rounded,
-                                    size: 48,
-                                    color: fuelColor.withValues(alpha: 0.35),
+                                    size: 44,
+                                    color: fuelColor.withValues(alpha: 0.25),
                                   ),
                                   const SizedBox(height: 8),
-                                  ElevatedButton.icon(
-                                    onPressed: () => _showAddPhotoDialog(vehicle),
-                                    icon: const Icon(Icons.add_a_photo_rounded, size: 16),
-                                    label: const Text('Fotoğraf Ekle', style: TextStyle(fontSize: 12)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.surfaceCard,
-                                      foregroundColor: AppTheme.textPrimary,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      minimumSize: Size.zero,
-                                      elevation: 2,
+                                  GestureDetector(
+                                    onTap: () => _showAddPhotoDialog(vehicle),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.surface,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                            color: AppTheme.borderSubtle),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.add_a_photo_rounded,
+                                              size: 14,
+                                              color: AppTheme.textSecondary),
+                                          SizedBox(width: 5),
+                                          Text(
+                                            'Fotoğraf Ekle',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppTheme.textSecondary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -431,8 +457,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                                 vehicle.name,
                                 style: const TextStyle(
                                   color: AppTheme.textPrimary,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -449,95 +475,88 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
 
             // Stats grid
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               child: Column(
                 children: [
                   // Row 1
                   Row(
                     children: [
-                      _statCard(
-                        Icons.speed_rounded,
+                      _statCell(
                         '${vehicle.currentKm.toStringAsFixed(0)} km',
                         'Son Kilometre',
-                        AppTheme.accentBlue,
+                        color: AppTheme.textPrimary,
                       ),
-                      const SizedBox(width: 10),
-                      _statCard(
-                        Icons.payments_rounded,
+                      _vDivider(),
+                      _statCell(
                         costPerKm > 0
                             ? '${costPerKm.toStringAsFixed(2)} ₺'
                             : '—',
                         'TL / KM',
-                        costPerKm > 0
-                            ? AppTheme.accentOrange
-                            : AppTheme.textHint,
+                        color: costPerKm > 0 ? AppTheme.accent : AppTheme.textHint,
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppTheme.dividerColor),
                   const SizedBox(height: 10),
                   // Row 2
                   Row(
                     children: [
-                      _statCard(
-                        Icons.water_drop_rounded,
+                      _statCell(
                         litersPer100 > 0
                             ? '${litersPer100.toStringAsFixed(1)} L'
                             : '—',
                         'L / 100 km',
-                        litersPer100 > 0
-                            ? AppTheme.accentCyan
+                        color: litersPer100 > 0
+                            ? AppTheme.textPrimary
                             : AppTheme.textHint,
                       ),
-                      const SizedBox(width: 10),
-                      _statCard(
-                        Icons.account_balance_wallet_rounded,
+                      _vDivider(),
+                      _statCell(
                         totalCost > 0
                             ? '${totalCost.toStringAsFixed(0)} ₺'
                             : '—',
                         'Toplam Harcama',
-                        totalCost > 0
-                            ? AppTheme.accentGreen
+                        color: totalCost > 0
+                            ? AppTheme.textPrimary
                             : AppTheme.textHint,
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Row 3: count + arrow
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppTheme.dividerColor),
+                  const SizedBox(height: 10),
+                  // Row 3
                   Row(
                     children: [
-                      _statCard(
-                        Icons.receipt_long_rounded,
+                      _statCell(
                         '$count alım',
                         'Yakıt Alımı',
-                        AppTheme.accentPurple,
+                        color: AppTheme.textPrimary,
                       ),
-                      const SizedBox(width: 10),
+                      _vDivider(),
                       Expanded(
-                        child: Container(
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentBlue.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppTheme.accentBlue.withValues(alpha: 0.15),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Detaylar',
-                                style: TextStyle(
-                                  color: AppTheme.accentBlue,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Detayları Gör',
+                              style: TextStyle(
+                                color: AppTheme.accent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
-                              SizedBox(width: 4),
-                              Icon(Icons.chevron_right_rounded,
-                                  color: AppTheme.accentBlue, size: 20),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Icon(Icons.chevron_right_rounded,
+                                color: AppTheme.accent, size: 18),
+                          ],
                         ),
                       ),
                     ],
@@ -551,7 +570,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     );
   }
 
-  // ── LIST ROW (kompakt sıralı görünüm) ────────────────────────────────────
+  // ── List Row ───────────────────────────────────────────────────────────────
+
   Widget _buildListRow(Vehicle vehicle) {
     final stats = _fuelStats[vehicle.id] ?? {};
     final costPerKm = (stats['costPerKm'] as num?)?.toDouble() ?? 0.0;
@@ -565,33 +585,34 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         _loadVehicles();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: AppTheme.dividerColor.withValues(alpha: 0.4)),
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.borderSubtle, width: 1),
         ),
         child: Row(
           children: [
-            // Avatar
+            // Thumbnail
             Container(
-              width: 52,
-              height: 52,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: fuelColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                color: fuelColor.withValues(alpha: 0.08),
+                border: Border.all(
+                    color: fuelColor.withValues(alpha: 0.15), width: 1),
               ),
               child: vehicle.imagePath != null &&
                       File(vehicle.imagePath!).existsSync()
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(9),
                       child: Image.file(File(vehicle.imagePath!),
                           fit: BoxFit.cover),
                     )
                   : Icon(Icons.directions_car_rounded,
-                      color: fuelColor, size: 28),
+                      color: fuelColor, size: 26),
             ),
             const SizedBox(width: 14),
             // Name + fuel
@@ -604,98 +625,72 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                     style: const TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   _fuelBadge(vehicle.fuelType, fuelColor, fontSize: 11),
                 ],
               ),
             ),
-            // Stats column
+            // Stats
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.payments_rounded,
-                        size: 13, color: AppTheme.accentOrange),
-                    const SizedBox(width: 3),
-                    Text(
-                      costPerKm > 0
-                          ? '${costPerKm.toStringAsFixed(2)} ₺/km'
-                          : '—',
-                      style: TextStyle(
-                        color: costPerKm > 0
-                            ? AppTheme.accentOrange
-                            : AppTheme.textHint,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                Text(
+                  costPerKm > 0 ? '${costPerKm.toStringAsFixed(2)} ₺/km' : '—',
+                  style: TextStyle(
+                    color: costPerKm > 0 ? AppTheme.accent : AppTheme.textHint,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.water_drop_rounded,
-                        size: 13, color: AppTheme.accentCyan),
-                    const SizedBox(width: 3),
-                    Text(
-                      litersPer100 > 0
-                          ? '${litersPer100.toStringAsFixed(1)} L/100'
-                          : '—',
-                      style: TextStyle(
-                        color: litersPer100 > 0
-                            ? AppTheme.accentCyan
-                            : AppTheme.textHint,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 3),
+                Text(
+                  litersPer100 > 0
+                      ? '${litersPer100.toStringAsFixed(1)} L/100'
+                      : '—',
+                  style: TextStyle(
+                    color: litersPer100 > 0
+                        ? AppTheme.textSecondary
+                        : AppTheme.textHint,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.speed_rounded,
-                        size: 13, color: AppTheme.accentBlue),
-                    const SizedBox(width: 3),
-                    Text(
-                      '${vehicle.currentKm.toStringAsFixed(0)} km',
-                      style: const TextStyle(
-                        color: AppTheme.accentBlue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 3),
+                Text(
+                  '${vehicle.currentKm.toStringAsFixed(0)} km',
+                  style: const TextStyle(
+                    color: AppTheme.textHint,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
             const SizedBox(width: 8),
             const Icon(Icons.chevron_right_rounded,
-                color: AppTheme.textHint, size: 20),
+                color: AppTheme.textHint, size: 18),
           ],
         ),
       ),
     );
   }
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   Widget _fuelBadge(String fuelType, Color color, {double fontSize = 12}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.35), width: 0.8),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppTheme.getFuelTypeIcon(fuelType), size: 12, color: color),
+          Icon(AppTheme.getFuelTypeIcon(fuelType), size: 11, color: color),
           const SizedBox(width: 4),
           Text(
             fuelType,
@@ -710,49 +705,177 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     );
   }
 
-  Widget _statCard(
-      IconData icon, String value, String label, Color color) {
+  /// Badge variant for photo overlay (dark bg → always white text)
+  Widget _fuelBadgeLight(String fuelType, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppTheme.getFuelTypeIcon(fuelType), size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            fuelType,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCell(String value, String label, {required Color color}) {
     return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textHint,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vDivider() {
+    return Container(
+      width: 1,
+      height: 32,
+      color: AppTheme.dividerColor,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+    );
+  }
+
+  // ── Photo picker ───────────────────────────────────────────────────────────
+
+  void _showAddPhotoDialog(Vehicle vehicle) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.borderSubtle,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Fotoğraf Ekle',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _photoOption(
+                icon: Icons.camera_alt_rounded,
+                title: 'Kamera',
+                subtitle: 'Fotoğraf çek',
+                color: AppTheme.accent,
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSaveImageForVehicle(vehicle, ImageSource.camera);
+                },
+              ),
+              const SizedBox(height: 8),
+              _photoOption(
+                icon: Icons.photo_library_rounded,
+                title: 'Galeri',
+                subtitle: 'Galeriden seç',
+                color: AppTheme.maintColor,
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSaveImageForVehicle(vehicle, ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _photoOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
+          color: AppTheme.surfaceAlt,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.borderSubtle),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(7),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 16, color: color),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    label,
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
                     style: const TextStyle(
-                      color: AppTheme.textHint,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    )),
+                Text(subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    )),
+              ],
             ),
           ],
         ),
@@ -760,40 +883,12 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     );
   }
 
-  void _exportData() async {
-    try {
-      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Dışa aktarılacak klasörü seçin',
-      );
-
-      if (selectedDirectory == null) {
-        return; // Kullanıcı iptal etti
-      }
-
-      final data = await DatabaseHelper.instance.exportAllData();
-      final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final file = File('$selectedDirectory/yakit_yonet_yedek_$dateStr.json');
-      
-      await file.writeAsString(jsonEncode(data));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Veriler başarıyla dışa aktarıldı:\n${file.path}')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _pickAndSaveImageForVehicle(Vehicle vehicle, ImageSource source) async {
+  Future<void> _pickAndSaveImageForVehicle(
+      Vehicle vehicle, ImageSource source) async {
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: source, maxWidth: 1200, imageQuality: 85);
+      final pickedFile =
+          await picker.pickImage(source: source, maxWidth: 1200, imageQuality: 85);
       if (pickedFile != null) {
         final image = File(pickedFile.path);
         final dir = await getApplicationDocumentsDirectory();
@@ -801,9 +896,10 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         if (!await vehicleImagesDir.exists()) {
           await vehicleImagesDir.create(recursive: true);
         }
-        final fileName = 'vehicle_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
-        final savedImage = await image.copy('${vehicleImagesDir.path}/$fileName');
-        
+        final fileName =
+            'vehicle_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
+        final savedImage =
+            await image.copy('${vehicleImagesDir.path}/$fileName');
         final updatedVehicle = Vehicle(
           id: vehicle.id,
           name: vehicle.name,
@@ -812,10 +908,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
           tankCapacity: vehicle.tankCapacity,
           imagePath: savedImage.path,
         );
-        
         await DatabaseHelper.instance.updateVehicle(updatedVehicle);
         await _loadVehicles();
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Fotoğraf başarıyla eklendi')),
@@ -831,80 +925,31 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     }
   }
 
-  void _showAddPhotoDialog(Vehicle vehicle) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surfaceCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.dividerColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text('Fotoğraf Ekle',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  )),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentBlue.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.camera_alt_rounded,
-                      color: AppTheme.accentBlue),
-                ),
-                title: const Text('Kamera',
-                    style: TextStyle(color: AppTheme.textPrimary)),
-                subtitle: const Text('Fotoğraf çek',
-                    style: TextStyle(color: AppTheme.textSecondary)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickAndSaveImageForVehicle(vehicle, ImageSource.camera);
-                },
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentGreen.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.photo_library_rounded,
-                      color: AppTheme.accentGreen),
-                ),
-                title: const Text('Galeri',
-                    style: TextStyle(color: AppTheme.textPrimary)),
-                subtitle: const Text('Galeriden seç',
-                    style: TextStyle(color: AppTheme.textSecondary)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickAndSaveImageForVehicle(vehicle, ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _exportData() async {
+    try {
+      final String? selectedDirectory =
+          await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Dışa aktarılacak klasörü seçin',
+      );
+      if (selectedDirectory == null) return;
+      final data = await DatabaseHelper.instance.exportAllData();
+      final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final file =
+          File('$selectedDirectory/yakit_yonet_yedek_$dateStr.json');
+      await file.writeAsString(jsonEncode(data));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Veriler başarıyla dışa aktarıldı:\n${file.path}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Hata: $e')));
+      }
+    }
   }
 
   void _importData() async {
@@ -914,27 +959,22 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         allowedExtensions: ['json'],
         dialogTitle: 'İçe aktarılacak yedek dosyasını seçin',
       );
-
-      if (result == null || result.files.single.path == null) {
-        return; // Kullanıcı iptal etti
-      }
-
+      if (result == null || result.files.single.path == null) return;
       final file = File(result.files.single.path!);
       final String jsonStr = await file.readAsString();
       final Map<String, dynamic> data = jsonDecode(jsonStr);
-
       await DatabaseHelper.instance.importAllData(data);
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Veriler başarıyla içe aktarıldı')),
         );
-        _loadVehicles(); // Listeyi yenile
+        _loadVehicles();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: İçeri aktarma başarısız oldu. ($e)')),
+          SnackBar(
+              content: Text('Hata: İçeri aktarma başarısız oldu. ($e)')),
         );
       }
     }

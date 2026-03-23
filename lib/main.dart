@@ -12,11 +12,15 @@ import 'screens/vehicle_detail_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/backup_screen.dart';
 import 'services/google_drive_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   await initializeDateFormatting('tr_TR', null);
+  
+  // Initialize Notification Service
+  await NotificationService().init();
   
   // Load environment variables
   try {
@@ -29,7 +33,9 @@ void main() async {
   
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
   ));
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
@@ -49,7 +55,9 @@ class YakitYonetApp extends StatelessWidget {
     return MaterialApp(
       title: dotenv.get('APP_NAME', fallback: 'Yakıt Yönet'),
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Cihazın moduna göre otomatik karanlık/aydınlık tema kullanır
       initialRoute: '/splash',
       onGenerateRoute: (settings) {
         switch (settings.name) {
