@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
@@ -738,10 +741,23 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
 
   void _exportData() async {
     try {
-      await DatabaseHelper.instance.exportAllData();
+      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Dışa aktarılacak klasörü seçin',
+      );
+
+      if (selectedDirectory == null) {
+        return; // Kullanıcı iptal etti
+      }
+
+      final data = await DatabaseHelper.instance.exportAllData();
+      final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final file = File('$selectedDirectory/yakit_yonet_yedek_$dateStr.json');
+      
+      await file.writeAsString(jsonEncode(data));
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Veriler dışa aktarıldı')),
+          SnackBar(content: Text('Veriler başarıyla dışa aktarıldı:\n${file.path}')),
         );
       }
     } catch (e) {
@@ -753,9 +769,36 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     }
   }
 
-  void _importData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('İçe aktarma özelliği yakında gelecek')),
-    );
+  void _importData() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'İçe aktarılacak yedek dosyasını seçin',
+      );
+
+      if (result == null || result.files.single.path == null) {
+        return; // Kullanıcı iptal etti
+      }
+
+      final file = File(result.files.single.path!);
+      final String jsonStr = await file.readAsString();
+      final Map<String, dynamic> data = jsonDecode(jsonStr);
+
+      await DatabaseHelper.instance.importAllData(data);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Veriler başarıyla içe aktarıldı')),
+        );
+        _loadVehicles(); // Listeyi yenile
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: İçeri aktarma başarısız oldu. ($e)')),
+        );
+      }
+    }
   }
 }

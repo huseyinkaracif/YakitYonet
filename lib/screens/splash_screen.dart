@@ -188,41 +188,68 @@ class FuelGaugePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
 
-    // Background circle
+    // Arka plan dairesi (boş tank)
     final bgPaint = Paint()
       ..color = AppTheme.surfaceCard
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi * 0.75,
-      pi * 1.5,
-      false,
-      bgPaint,
-    );
+      ..strokeWidth = 4;
+    canvas.drawCircle(center, radius, bgPaint);
 
-    // Progress arc
-    final progressPaint = Paint()
+    if (progress > 0) {
+      // Sıvı animasyonu için clipping (maske)
+      final clipPath = Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+      canvas.save();
+      canvas.clipPath(clipPath);
+
+      // Sıvı dalga çizgisi (fluid path)
+      final waterPath = Path();
+      
+      // Sıvı seviyesi (aşağıdan yukarıya doğru y ekseni azalır)
+      final waterLevel = (center.dy + radius) - (2 * radius * progress);
+
+      waterPath.moveTo(center.dx - radius, center.dy + radius);
+      waterPath.lineTo(center.dx - radius, waterLevel);
+
+      // Sinüs dalgası (hareket hissi için phase eklendi)
+      final phase = progress * pi * 8; 
+      final amplitude = progress > 0.03 && progress < 0.97 ? 8.0 : 0.0; 
+      
+      for (double i = 0; i <= 2 * radius; i += 2) {
+        final x = center.dx - radius + i;
+        final y = waterLevel + sin((i / radius) * pi + phase) * amplitude;
+        waterPath.lineTo(x, y);
+      }
+
+      waterPath.lineTo(center.dx + radius, center.dy + radius);
+      waterPath.close();
+
+      // Suyun rengi
+      final waterPaint = Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [AppTheme.accentBlue, AppTheme.accentCyan, AppTheme.accentGreen],
+        ).createShader(Rect.fromCircle(center: center, radius: radius))
+        ..style = PaintingStyle.fill;
+
+      canvas.drawPath(waterPath, waterPaint);
+      canvas.restore();
+    }
+
+    // Dış halka parlaması
+    final ringPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [AppTheme.accentBlue, AppTheme.accentCyan, AppTheme.accentGreen],
+        colors: [AppTheme.accentBlue, AppTheme.accentCyan],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi * 0.75,
-      pi * 1.5 * progress,
-      false,
-      progressPaint,
-    );
+      ..strokeWidth = 2;
+    canvas.drawCircle(center, radius, ringPaint);
 
-    // Center background circle (app icon will be placed on top via Stack)
-    final iconPaint = Paint()
-      ..color = AppTheme.accentBlue.withValues(alpha: 0.10)
+    // İkon için iç kısımdan suyun geçmesini engellemek amaçlı arka plan rengiyle dolgu
+    final cutoutPaint = Paint()
+      ..color = AppTheme.primaryDark
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, radius * 0.62, iconPaint);
+    canvas.drawCircle(center, radius * 0.65, cutoutPaint);
   }
 
   @override
