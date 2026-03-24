@@ -11,6 +11,8 @@ import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
 import '../services/google_drive_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../main.dart';
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -50,7 +52,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgMain,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -111,13 +113,13 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 size: 20, color: Colors.white),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
               'Araçlarım',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.5,
               ),
             ),
@@ -130,16 +132,39 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               tooltip: _isBannerView ? 'Liste görünümü' : 'Kart görünümü',
               icon: Icon(
                 _isBannerView ? Icons.view_list_rounded : Icons.dashboard_rounded,
-                color: AppTheme.textSecondary,
+                color: Theme.of(context).iconTheme.color ?? AppTheme.textSecondary,
                 size: 22,
               ),
               onPressed: () => setState(() => _isBannerView = !_isBannerView),
             ),
           ),
+          // Theme toggle
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeNotifier,
+            builder: (context, currentMode, _) {
+              final isDark = currentMode == ThemeMode.dark ||
+                  (currentMode == ThemeMode.system &&
+                      MediaQuery.of(context).platformBrightness == Brightness.dark);
+              return IconButton(
+                tooltip: isDark ? 'Açık Tema' : 'Koyu Tema',
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: Theme.of(context).iconTheme.color ?? AppTheme.textSecondary,
+                  size: 22,
+                ),
+                onPressed: () async {
+                  final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
+                  themeNotifier.value = newMode;
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('theme_mode', newMode == ThemeMode.light ? 'light' : 'dark');
+                },
+              );
+            },
+          ),
           // Menu
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded,
-                color: AppTheme.textSecondary, size: 22),
+            icon: Icon(Icons.more_vert_rounded,
+                color: Theme.of(context).iconTheme.color ?? AppTheme.textSecondary, size: 22),
             onSelected: (value) {
               switch (value) {
                 case 'stats':
@@ -198,8 +223,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
           Icon(icon, color: color, size: 18),
           const SizedBox(width: 12),
           Text(label,
-              style: const TextStyle(
-                  color: AppTheme.textPrimary, fontSize: 14)),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
         ],
       ),
     );
@@ -223,8 +248,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   children: [
                     Text(
                       'Merhaba, ${user?.displayName ?? 'Misafir'}',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -342,9 +367,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.borderSubtle, width: 1),
+          border: Border.all(color: Theme.of(context).cardTheme.shape is RoundedRectangleBorder ? (Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side.color : AppTheme.borderSubtle, width: 1),
           boxShadow: const [
             BoxShadow(
               color: Color(0x081C1917),
@@ -404,7 +429,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                         ],
                       )
                     : Container(
-                        color: AppTheme.surfaceAlt,
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF292524) : AppTheme.surfaceAlt,
                         child: Stack(
                           children: [
                             Center(
@@ -423,10 +448,10 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.surface,
+                                        color: Theme.of(context).cardTheme.color,
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                            color: AppTheme.borderSubtle),
+                                            color: Theme.of(context).dividerTheme.color ?? AppTheme.borderSubtle),
                                       ),
                                       child: const Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -588,9 +613,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.borderSubtle, width: 1),
+          border: Border.all(color: Theme.of(context).dividerTheme.color ?? AppTheme.borderSubtle, width: 1),
         ),
         child: Row(
           children: [
@@ -773,7 +798,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   void _showAddPhotoDialog(Vehicle vehicle) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: Theme.of(context).dialogBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

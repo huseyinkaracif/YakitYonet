@@ -45,7 +45,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   void _showImagePicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: Theme.of(context).dialogBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -67,12 +67,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Fotoğraf Seçin',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
@@ -118,9 +118,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceAlt,
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF292524) : AppTheme.surfaceAlt,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppTheme.borderSubtle),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(
           children: [
@@ -137,8 +137,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     )),
@@ -204,7 +204,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgMain,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -214,16 +214,16 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: AppTheme.textPrimary),
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: Theme.of(context).colorScheme.onSurface),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
+                  Text(
                     'Yeni Araç Ekle',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -231,8 +231,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               ),
             ),
 
-            // Thin divider
-            const Divider(height: 1, thickness: 1, color: AppTheme.dividerColor),
+            Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor),
 
             Expanded(
               child: SingleChildScrollView(
@@ -248,10 +247,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                         child: Container(
                           height: 190,
                           decoration: BoxDecoration(
-                            color: AppTheme.surfaceAlt,
+                            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF292524) : AppTheme.surfaceAlt,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: AppTheme.borderSubtle, width: 1),
+                                color: Theme.of(context).dividerColor, width: 1),
                             image: _image != null
                                 ? DecorationImage(
                                     image: FileImage(_image!),
@@ -277,10 +276,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-                                    const Text(
+                                    Text(
                                       'Araç Fotoğrafı Ekle',
                                       style: TextStyle(
-                                        color: AppTheme.textPrimary,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -307,7 +306,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       // Vehicle Name
                       TextFormField(
                         controller: _nameController,
-                        style: const TextStyle(color: AppTheme.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         decoration: const InputDecoration(
                           labelText: 'Araç Adı',
                           prefixIcon: Icon(Icons.directions_car_rounded,
@@ -326,7 +325,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       // Current KM
                       TextFormField(
                         controller: _kmController,
-                        style: const TextStyle(color: AppTheme.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Mevcut Kilometre',
@@ -414,7 +413,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _tankController,
-                        style: const TextStyle(color: AppTheme.textPrimary),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'Depo Kapasitesi',

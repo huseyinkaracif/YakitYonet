@@ -48,14 +48,14 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: AppTheme.bgMain,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(child: CircularProgressIndicator(color: AppTheme.accent)),
       );
     }
 
     if (_vehicle == null) {
       return Scaffold(
-        backgroundColor: AppTheme.bgMain,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -84,7 +84,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
     final fuelColor = AppTheme.getFuelTypeColor(vehicle.fuelType);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgMain,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {

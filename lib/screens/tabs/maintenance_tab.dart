@@ -45,7 +45,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.bgMain,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: _records.isEmpty
           ? _buildEmptyState()
           : SingleChildScrollView(

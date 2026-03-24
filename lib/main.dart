@@ -14,6 +14,9 @@ import 'screens/backup_screen.dart';
 import 'services/google_drive_service.dart';
 import 'services/notification_service.dart';
 
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -42,6 +45,15 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
 
+  final savedTheme = prefs.getString('theme_mode');
+  if (savedTheme == 'light') {
+    themeNotifier.value = ThemeMode.light;
+  } else if (savedTheme == 'dark') {
+    themeNotifier.value = ThemeMode.dark;
+  } else {
+    themeNotifier.value = ThemeMode.system;
+  }
+
   runApp(YakitYonetApp(onboardingComplete: onboardingComplete));
 }
 
@@ -52,55 +64,60 @@ class YakitYonetApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: dotenv.get('APP_NAME', fallback: 'Yakıt Yönet'),
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Cihazın moduna göre otomatik karanlık/aydınlık tema kullanır
-      initialRoute: '/splash',
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/splash':
-            return _buildRoute(const SplashScreen(), settings);
-          case '/onboarding':
-            return _buildRoute(const OnboardingScreen(), settings);
-          case '/home':
-            // Check if onboarding was already completed
-            if (!onboardingComplete) {
-              // Check again in case it was just completed
-              return _buildRoute(
-                FutureBuilder<bool>(
-                  future: _checkOnboarding(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    if (snapshot.data == true) {
-                      return const VehicleListScreen();
-                    }
-                    return const OnboardingScreen();
-                  },
-                ),
-                settings,
-              );
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, __) {
+        return MaterialApp(
+          title: dotenv.get('APP_NAME', fallback: 'Yakıt Yönet'),
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: currentMode,
+          initialRoute: '/splash',
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case '/splash':
+                return _buildRoute(const SplashScreen(), settings);
+              case '/onboarding':
+                return _buildRoute(const OnboardingScreen(), settings);
+              case '/home':
+                // Check if onboarding was already completed
+                if (!onboardingComplete) {
+                  // Check again in case it was just completed
+                  return _buildRoute(
+                    FutureBuilder<bool>(
+                      future: _checkOnboarding(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Scaffold(
+                            body: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        if (snapshot.data == true) {
+                          return const VehicleListScreen();
+                        }
+                        return const OnboardingScreen();
+                      },
+                    ),
+                    settings,
+                  );
+                }
+                return _buildRoute(const VehicleListScreen(), settings);
+              case '/add-vehicle':
+                return _buildRoute(const AddVehicleScreen(), settings);
+              case '/vehicle-detail':
+                final vehicleId = settings.arguments as int;
+                return _buildRoute(
+                    VehicleDetailScreen(vehicleId: vehicleId), settings);
+              case '/statistics':
+                return _buildRoute(const StatisticsScreen(), settings);
+              case '/backup':
+                return _buildRoute(const BackupScreen(), settings);
+              default:
+                return _buildRoute(const VehicleListScreen(), settings);
             }
-            return _buildRoute(const VehicleListScreen(), settings);
-          case '/add-vehicle':
-            return _buildRoute(const AddVehicleScreen(), settings);
-          case '/vehicle-detail':
-            final vehicleId = settings.arguments as int;
-            return _buildRoute(
-                VehicleDetailScreen(vehicleId: vehicleId), settings);
-          case '/statistics':
-            return _buildRoute(const StatisticsScreen(), settings);
-          case '/backup':
-            return _buildRoute(const BackupScreen(), settings);
-          default:
-            return _buildRoute(const VehicleListScreen(), settings);
-        }
+          },
+        );
       },
     );
   }

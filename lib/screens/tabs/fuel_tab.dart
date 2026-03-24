@@ -50,7 +50,7 @@ class _FuelTabState extends State<FuelTab> {
     }
 
     return Container(
-      color: AppTheme.bgMain,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Stack(
         children: [
           _records.isEmpty
