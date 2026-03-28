@@ -111,23 +111,23 @@ class _BackupScreenState extends State<BackupScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: AppTheme.textPrimary),
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: AppTheme.textPrimaryFor(context)),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
+                  Text(
                     'Yedekleme Ayarları',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: AppTheme.dividerColor),
+            Divider(height: 1, thickness: 1, color: AppTheme.dividerFor(context)),
 
             Expanded(
               child: _loading
@@ -146,7 +146,7 @@ class _BackupScreenState extends State<BackupScreen> {
                             children: [
                               // Status card
                               Container(
-                                decoration: AppTheme.glassDecoration,
+                                decoration: AppTheme.cardDecorationFor(context),
                                 padding: const EdgeInsets.all(20),
                                 child: Row(
                                   children: [
@@ -157,14 +157,14 @@ class _BackupScreenState extends State<BackupScreen> {
                                         color: user != null
                                             ? AppTheme.successColor
                                                 .withValues(alpha: 0.1)
-                                            : AppTheme.surfaceAlt,
+                                            : AppTheme.surfaceAltFor(context),
                                         borderRadius:
                                             BorderRadius.circular(14),
                                         border: Border.all(
                                           color: user != null
                                               ? AppTheme.successColor
                                                   .withValues(alpha: 0.25)
-                                              : AppTheme.borderSubtle,
+                                              : AppTheme.borderFor(context),
                                         ),
                                       ),
                                       child: Icon(
@@ -173,7 +173,7 @@ class _BackupScreenState extends State<BackupScreen> {
                                             : Icons.cloud_off_rounded,
                                         color: user != null
                                             ? AppTheme.successColor
-                                            : AppTheme.textHint,
+                                            : AppTheme.textHintFor(context),
                                         size: 26,
                                       ),
                                     ),
@@ -187,8 +187,8 @@ class _BackupScreenState extends State<BackupScreen> {
                                             user != null
                                                 ? 'Google Drive Bağlı'
                                                 : 'Google Drive Yedekleme',
-                                            style: const TextStyle(
-                                              color: AppTheme.textPrimary,
+                                            style: TextStyle(
+                                              color: AppTheme.textPrimaryFor(context),
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
                                             ),
@@ -199,8 +199,8 @@ class _BackupScreenState extends State<BackupScreen> {
                                                 ? user.displayName ??
                                                     user.email
                                                 : 'Verilerinizi güvenle yedekleyin.',
-                                            style: const TextStyle(
-                                              color: AppTheme.textSecondary,
+                                            style: TextStyle(
+                                              color: AppTheme.textSecondaryFor(context),
                                               fontSize: 13,
                                             ),
                                           ),
@@ -226,11 +226,11 @@ class _BackupScreenState extends State<BackupScreen> {
                                                 () => _syncing = false);
                                           },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
+                                      backgroundColor: AppTheme.surfaceFor(context),
                                       foregroundColor:
-                                          AppTheme.textPrimary,
-                                      side: const BorderSide(
-                                          color: AppTheme.borderSubtle),
+                                          AppTheme.textPrimaryFor(context),
+                                      side: BorderSide(
+                                          color: AppTheme.borderFor(context)),
                                       elevation: 0,
                                     ),
                                     icon: _syncing
@@ -260,20 +260,20 @@ class _BackupScreenState extends State<BackupScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text(
+                                Text(
                                   'Yedekleme ve geri yükleme özelliklerini kullanmak için giriş yapmanız gerekmektedir.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      color: AppTheme.textHint,
+                                      color: AppTheme.textHintFor(context),
                                       fontSize: 12,
                                       height: 1.5),
                                 ),
                               ] else ...[
                                 // Auto backup options
-                                const Text(
+                                Text(
                                   'OTOMATİK YEDEKLEME',
                                   style: TextStyle(
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.textSecondaryFor(context),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.8,
@@ -298,10 +298,10 @@ class _BackupScreenState extends State<BackupScreen> {
                                 const SizedBox(height: 20),
 
                                 // Actions
-                                const Text(
+                                Text(
                                   'MANUEL İŞLEMLER',
                                   style: TextStyle(
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.textSecondaryFor(context),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.8,
@@ -366,11 +366,11 @@ class _BackupScreenState extends State<BackupScreen> {
 
                               if (_syncing) ...[
                                 const SizedBox(height: 8),
-                                const Text(
+                                Text(
                                   'Lütfen bekleyin, işlem tamamlanıyor...',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      color: AppTheme.textHint,
+                                      color: AppTheme.textHintFor(context),
                                       fontSize: 12),
                                 ),
                               ],
@@ -389,6 +389,11 @@ class _BackupScreenState extends State<BackupScreen> {
   Widget _buildOption(
       String value, String label, IconData icon, String desc) {
     final isSelected = _backupPref == value;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgCol = isSelected
+        ? (isDark ? AppTheme.accent.withValues(alpha: 0.15) : AppTheme.accentLight)
+        : AppTheme.surfaceFor(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -398,10 +403,10 @@ class _BackupScreenState extends State<BackupScreen> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.accentLight : AppTheme.surface,
+            color: bgCol,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? AppTheme.accent : AppTheme.borderSubtle,
+              color: isSelected ? AppTheme.accent : AppTheme.borderFor(context),
               width: isSelected ? 1.5 : 1,
             ),
           ),
@@ -412,13 +417,13 @@ class _BackupScreenState extends State<BackupScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.accent.withValues(alpha: 0.12)
-                      : AppTheme.surfaceAlt,
+                      : AppTheme.surfaceAltFor(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon,
                     color: isSelected
                         ? AppTheme.accent
-                        : AppTheme.textSecondary,
+                        : AppTheme.textSecondaryFor(context),
                     size: 18),
               ),
               const SizedBox(width: 14),
@@ -432,15 +437,15 @@ class _BackupScreenState extends State<BackupScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: isSelected
-                            ? AppTheme.textPrimary
-                            : AppTheme.textSecondary,
+                            ? AppTheme.textPrimaryFor(context)
+                            : AppTheme.textSecondaryFor(context),
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       desc,
-                      style: const TextStyle(
-                          color: AppTheme.textHint, fontSize: 12),
+                      style: TextStyle(
+                          color: AppTheme.textHintFor(context), fontSize: 12),
                     ),
                   ],
                 ),

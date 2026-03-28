@@ -622,7 +622,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                             ? '${costPerKm.toStringAsFixed(2)} ₺'
                             : '—',
                         'TL / KM',
-                        color: costPerKm > 0 ? AppTheme.accent : AppTheme.textHint,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ],
                   ),
@@ -1216,7 +1216,7 @@ class _FuelPriceChip extends StatelessWidget {
             : '--:--';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fiyatlar Ankara (06) bazlıdır · Güncelleme: $timeStr'),
+            content: Text('Fiyatlar Ankara bazlıdır\nGüncelleme Zamanı: $timeStr', textAlign: TextAlign.center),
             duration: const Duration(seconds: 2),
           ),
         );

@@ -64,23 +64,23 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: AppTheme.textPrimary),
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: AppTheme.textPrimaryFor(context)),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
+                  Text(
                     'Genel İstatistikler',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryFor(context),
                       letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: AppTheme.dividerColor),
+            Divider(height: 1, thickness: 1, color: AppTheme.dividerFor(context)),
 
             Expanded(
               child: _loading
@@ -102,10 +102,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                     size: 36, color: AppTheme.accent),
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'Henüz araç eklenmemiş',
                                 style: TextStyle(
-                                  color: AppTheme.textSecondary,
+                                  color: AppTheme.textSecondaryFor(context),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -216,9 +216,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: AppTheme.surfaceFor(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderSubtle),
+        border: Border.all(color: AppTheme.borderFor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,8 +236,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              color: AppTheme.textHint,
+            style: TextStyle(
+              color: AppTheme.textHintFor(context),
               fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
@@ -252,15 +252,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     if (_vehicles.isEmpty) return const SizedBox();
 
     return Container(
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Araçlar Arası Maliyet Kıyası',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryFor(context),
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -283,8 +283,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             _vehicles[i].name,
-                            style: const TextStyle(
-                                color: AppTheme.textHint, fontSize: 9),
+                            style: TextStyle(
+                                color: AppTheme.textHintFor(context), fontSize: 9),
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
@@ -298,8 +298,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       reservedSize: 46,
                       getTitlesWidget: (v, m) => Text(
                         '${v.toInt()}₺',
-                        style: const TextStyle(
-                            color: AppTheme.textHint, fontSize: 9),
+                        style: TextStyle(
+                            color: AppTheme.textHintFor(context), fontSize: 9),
                       ),
                     ),
                   ),
@@ -312,7 +312,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (v) => FlLine(
-                    color: AppTheme.dividerColor,
+                    color: AppTheme.dividerFor(context),
                     strokeWidth: 1,
                   ),
                 ),
@@ -385,8 +385,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         const SizedBox(width: 5),
         Text(
           label,
-          style: const TextStyle(
-              color: AppTheme.textSecondary, fontSize: 11),
+          style: TextStyle(
+              color: AppTheme.textSecondaryFor(context), fontSize: 11),
         ),
       ],
     );
@@ -406,15 +406,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     if (total == 0) return const SizedBox();
 
     return Container(
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Kategori Dağılımı',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryFor(context),
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -492,15 +492,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Widget _buildVehicleTable() {
     return Container(
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Araç Detay Tablosu',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryFor(context),
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -510,11 +510,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingRowColor:
-                  WidgetStateProperty.all(AppTheme.surfaceAlt),
-              dataRowColor: WidgetStateProperty.all(AppTheme.surface),
+                  WidgetStateProperty.all(AppTheme.surfaceAltFor(context)),
+              dataRowColor: WidgetStateProperty.all(AppTheme.surfaceFor(context)),
               columnSpacing: 16,
-              headingTextStyle: const TextStyle(
-                color: AppTheme.textSecondary,
+              headingTextStyle: TextStyle(
+                color: AppTheme.textSecondaryFor(context),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -534,8 +534,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 return DataRow(
                   cells: [
                     DataCell(Text(v.name,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
+                        style: TextStyle(
+                          color: AppTheme.textPrimaryFor(context),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ))),
@@ -550,8 +550,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             color: AppTheme.insurColor, fontSize: 12))),
                     DataCell(Text(
                       '${(fuel + maint + ins).toStringAsFixed(0)} ₺',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryFor(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),

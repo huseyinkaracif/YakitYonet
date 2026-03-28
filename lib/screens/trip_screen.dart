@@ -77,7 +77,6 @@ class _TripScreenState extends State<TripScreen>
 
     final stats = await DatabaseHelper.instance.getVehicleFuelStats(v.id!);
     final l100 = (stats['litersPer100Km'] as num).toDouble();
-    final avgPrice = (stats['avgPrice'] as num).toDouble();
     final defaultL100 = _defaultConsumption(v.fuelType);
     final defaultPrice = _defaultPrice(v.fuelType);
 
@@ -85,28 +84,44 @@ class _TripScreenState extends State<TripScreen>
     setState(() {
       _consumCtrl.text =
           (l100 > 0 ? l100 : defaultL100).toStringAsFixed(1);
-      if (avgPrice > 0) {
-        // Tarihsel ortalama varsa onu kullan
-        _priceCtrl.text = avgPrice.toStringAsFixed(2);
-        _priceAutofilled = false;
-      } else {
-        // Tarihsel veri yoksa şimdilik default koy, live fiyat aşağıda denenecek
-        _priceCtrl.text = defaultPrice.toStringAsFixed(2);
-      }
+      _priceCtrl.text = defaultPrice.toStringAsFixed(2);
     });
 
-    // Tarihsel veri yoksa live fiyatı dene
-    if (avgPrice <= 0) {
+    // Her zaman anlık fiyatı çekmeyi dene
+    try {
       final livePrices = await FuelPriceService.instance.getPrices();
       if (!mounted) return;
-      final livePrice = livePrices?.priceFor(v.fuelType);
-      if (livePrice != null) {
-        setState(() {
-          _priceCtrl.text = livePrice.toStringAsFixed(2);
-          _priceAutofilled = true;
-        });
+
+      if (livePrices != null) {
+        final livePrice = livePrices.priceFor(v.fuelType);
+        if (livePrice != null) {
+          setState(() {
+            _priceCtrl.text = livePrice.toStringAsFixed(2);
+            _priceAutofilled = true;
+          });
+          _onInputChange();
+        } else {
+          _showWarning('Bu araç türü için anlık fiyat bulunamadı.');
+        }
+      } else {
+        _showWarning('Anlık yakıt fiyatları çekilemedi. İnternet bağlantınızı kontrol edin.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showWarning('Anlık yakıt fiyatları çekilirken bir hata oluştu.');
       }
     }
+  }
+
+  void _showWarning(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.dangerColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   double _defaultConsumption(String fuelType) {
@@ -132,9 +147,11 @@ class _TripScreenState extends State<TripScreen>
     final consum = double.tryParse(_consumCtrl.text.replaceAll(',', '.'));
     final ready = km != null && km > 0 && price != null && price > 0 && consum != null;
     
-    setState(() {
-      _priceAutofilled = false;
-    });
+    // Autofill iptalini buradan kaldırdık çünkü text alanı her güncellendiğinde burası çağrılıyor
+    // setState(() {
+    //   _priceAutofilled = false;
+    // });
+    setState(() {}); // Sadece anlık hesaplamayı tetiklesin
 
     if (ready) {
       _resultsAnim.forward();
@@ -156,8 +173,9 @@ class _TripScreenState extends State<TripScreen>
   double get _totalCost => _liters * (_price ?? 0);
 
   double get _costPerKm {
-    final km = _km ?? 0;
-    return km > 0 ? _totalCost / km : 0;
+    final c = _consum ?? 0;
+    final p = _price ?? 0;
+    return (c * p) / 100;
   }
 
   int get _refuels {
@@ -215,9 +233,9 @@ class _TripScreenState extends State<TripScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Seyahat Hesaplayici',
+                Text('Seyahat Hesaplayıcı',
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -0.3)),
-                Text('Arac sec. Km gir. Aninda hesapla.',
+                Text('Araç seç. Km gir. Anında hesapla.',
                     style: TextStyle(color: AppTheme.textHint, fontSize: 11)),
               ],
             ),
@@ -240,7 +258,7 @@ class _TripScreenState extends State<TripScreen>
     if (_vehicles.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32),
-        child: Center(child: Text('Henuz arac eklenmemis.', style: TextStyle(color: AppTheme.textHint))),
+        child: Center(child: Text('Henüz araç eklenmemiş.', style: TextStyle(color: AppTheme.textHint))),
       );
     }
     return Column(
@@ -436,7 +454,7 @@ class _TripScreenState extends State<TripScreen>
             const SizedBox(height: 12),
             _inputField(
               controller: _priceCtrl,
-              label: isElectric ? 'Sarj Fiyati' : 'Yakit Fiyati',
+              label: isElectric ? 'Şarj Fiyatı' : 'Yakıt Fiyatı',
               suffix: isElectric ? 'TL/kWh' : 'TL/L',
               icon: isElectric ? Icons.bolt_rounded : Icons.local_gas_station_rounded,
               iconColor: const Color(0xFFD97706),
@@ -447,12 +465,13 @@ class _TripScreenState extends State<TripScreen>
             const SizedBox(height: 12),
             _inputField(
               controller: _consumCtrl,
-              label: 'Tuketim',
+              label: 'Tüketim',
               suffix: isElectric ? 'kWh/100' : 'L/100km',
               icon: Icons.speed_rounded,
               iconColor: const Color(0xFF7C3AED),
               hint: '0.0',
-              helperText: 'Aracınızın ortalama ${isElectric ? "kWh" : "L"} tüketimi',
+              helperText: '❖ Aracınızın ortalama tüketimi',
+              helperColor: AppTheme.textHint,
             ),
           ],
         ),
@@ -541,14 +560,14 @@ class _TripScreenState extends State<TripScreen>
                 color: const Color(0xFF16A34A),
                 question: 'Toplam Maliyet',
                 answer: 'TL ${_totalCost.toStringAsFixed(2)}',
-                detail: '${(_km ?? 0).toStringAsFixed(0)} km x TL ${_costPerKm.toStringAsFixed(3)}/km',
+                detail: '${(_km ?? 0).toStringAsFixed(0)} km x TL ${_costPerKm.toStringAsFixed(2)}/km',
                 isDark: isDark,
               ),
               const SizedBox(height: 10),
               _resultCard(
                 icon: isElectric ? Icons.bolt_rounded : Icons.local_gas_station_rounded,
                 color: const Color(0xFFD97706),
-                question: isElectric ? 'Enerji Tuketimi' : 'Yakit Tuketimi',
+                question: isElectric ? 'Enerji Tüketimi' : 'Yakıt Tüketimi',
                 answer: isElectric ? '${_liters.toStringAsFixed(2)} kWh' : '${_liters.toStringAsFixed(2)} Litre',
                 detail: '${(_consum ?? 0).toStringAsFixed(1)} ${isElectric ? "kWh" : "L"}/100km',
                 isDark: isDark,
@@ -557,9 +576,9 @@ class _TripScreenState extends State<TripScreen>
               _resultCard(
                 icon: isElectric ? Icons.ev_station_rounded : Icons.replay_rounded,
                 color: const Color(0xFF7C3AED),
-                question: isElectric ? 'Sarj Durumu' : 'Depo Sayisi',
+                question: isElectric ? 'Şarj Durumu' : 'Depo Sayısı',
                 answer: isElectric ? '--' : _refuels == 0 ? '< 1 depo' : '$_refuels dolu depo',
-                detail: isElectric ? 'Sarj noktasi planlayın' : 'Depo kap.: ${(_vehicles[_selectedIndex].tankCapacity).toStringAsFixed(0)} L',
+                detail: isElectric ? 'Şarj noktası planlayın' : 'Depo kap.: ${(_vehicles[_selectedIndex].tankCapacity).toStringAsFixed(0)} L',
                 isDark: isDark,
               ),
             ],

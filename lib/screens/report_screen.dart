@@ -552,7 +552,7 @@ class _ReportScreenState extends State<ReportScreen>
       ),
       child: Column(
         children: [
-          _toggle('Akaryakıt Kayıtları', 'Tarih, km, litre, fiyat',
+          _toggle('Yakıt Kayıtları', 'Tarih, km, litre, fiyat',
               Icons.local_gas_station_rounded, AppTheme.fuelColor,
               _inclFuel, (v) => setState(() => _inclFuel = v),
               isFirst: true),

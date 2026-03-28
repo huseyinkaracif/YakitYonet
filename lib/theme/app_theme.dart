@@ -314,8 +314,8 @@ class AppTheme {
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: dangerColor, width: 1),
           ),
-          labelStyle: const TextStyle(color: Color(0xFFA8A29E), fontSize: 14),
-          hintStyle: const TextStyle(color: Color(0xFF78716C)),
+          labelStyle: const TextStyle(color: Color(0xFFD6D3D1), fontSize: 14),
+          hintStyle: const TextStyle(color: Color(0xFFA8A29E)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -350,11 +350,11 @@ class AppTheme {
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: Color(0xFF292524),
           selectedItemColor: accent,
-          unselectedItemColor: Color(0xFFA8A29E),
+          unselectedItemColor: Color(0xFFD6D3D1),
         ),
         tabBarTheme: const TabBarThemeData(
           labelColor: Colors.white,
-          unselectedLabelColor: Color(0xFFA8A29E),
+          unselectedLabelColor: Color(0xFFD6D3D1),
           indicatorColor: accent,
         ),
         dividerTheme: const DividerThemeData(
@@ -388,7 +388,7 @@ class AppTheme {
             fontWeight: FontWeight.w700,
           ),
           contentTextStyle: const TextStyle(
-            color: Color(0xFFA8A29E),
+            color: Color(0xFFD6D3D1),
             fontSize: 14,
             height: 1.5,
           ),
@@ -434,6 +434,30 @@ class AppTheme {
       Theme.of(ctx).brightness == Brightness.dark
           ? const Color(0xFF44403C)
           : borderSubtle;
+
+  /// Primary text color that adapts to light/dark.
+  static Color textPrimaryFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFFF5F5F4)
+          : textPrimary;
+
+  /// Secondary text color that adapts to light/dark.
+  static Color textSecondaryFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFFD6D3D1) // Daha belirgin, parlak gri
+          : textSecondary;
+
+  /// Hint text color that adapts to light/dark.
+  static Color textHintFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFFA8A29E) // Eski secondary rengi hint yapıldı, daha okunur
+          : textHint;
+
+  /// Divider color that adapts to light/dark.
+  static Color dividerFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFF44403C)
+          : dividerColor;
 
   /// Theme-aware card decoration (replaces static cardDecoration / glassDecoration).
   static BoxDecoration cardDecorationFor(BuildContext ctx) => BoxDecoration(

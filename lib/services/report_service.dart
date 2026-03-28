@@ -333,11 +333,11 @@ class ReportService {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                 children: [
-                  _cStat('Arac Sayisi', '${data.length}'),
+                  _cStat('Araç Sayısı', '${data.length}'),
                   _cDiv(),
-                  _cStat('Yakit Gideri', '${_numFmt.format(totalFuel)} TL'),
+                  _cStat('Yakıt Gideri', '${_numFmt.format(totalFuel)} TL'),
                   _cDiv(),
-                  _cStat('Bakim Gideri', '${_numFmt.format(totalMaint)} TL'),
+                  _cStat('Bakım Gideri', '${_numFmt.format(totalMaint)} TL'),
                   _cDiv(),
                   _cStat('Sigorta/Vergi', '${_numFmt.format(totalIns)} TL'),
                 ],
@@ -497,9 +497,9 @@ class ReportService {
           ]),
           pw.SizedBox(height: 8),
           pw.Row(children: [
-            _cPdf('Yakit Gideri', fuelCost, PdfColors.orange700),
+            _cPdf('Yakıt Gideri', fuelCost, PdfColors.orange700),
             _cPdf(
-                'Bakim Gideri', rd.maintenanceCost, PdfColors.blueGrey700),
+                'Bakım Gideri', rd.maintenanceCost, PdfColors.blueGrey700),
             _cPdf(
                 'Sigorta/Vergi', rd.insuranceCost, PdfColors.blueGrey600),
             _cPdf('TOPLAM', total, PdfColors.red700),
@@ -511,7 +511,7 @@ class ReportService {
     widgets.add(pw.SizedBox(height: 14));
 
     if (includeFuel && rd.fuelRecords.isNotEmpty) {
-      widgets.add(_secHead('Akaryakit Kayitlari', PdfColors.orange700));
+      widgets.add(_secHead('Yakıt Kayıtları', PdfColors.orange700));
       widgets.add(pw.SizedBox(height: 6));
       widgets.add(_pdfTable(
         ['Tarih', 'KM', 'Litre', 'TL/L', 'Toplam', 'Depo'],
@@ -532,10 +532,10 @@ class ReportService {
     }
 
     if (includeMaint && rd.maintenanceRecords.isNotEmpty) {
-      widgets.add(_secHead('Bakim Kayitlari', PdfColors.blueGrey700));
+      widgets.add(_secHead('Bakım Kayıtları', PdfColors.blueGrey700));
       widgets.add(pw.SizedBox(height: 6));
       widgets.add(_pdfTable(
-        ['Tarih', 'KM', 'Baslik', 'Kategori', 'Tutar'],
+        ['Tarih', 'KM', 'Başlık', 'Kategori', 'Tutar'],
         rd.maintenanceRecords
             .map((r) => [
                   _dateFmt.format(r.date),
@@ -552,10 +552,10 @@ class ReportService {
     }
 
     if (includeIns && rd.insuranceRecords.isNotEmpty) {
-      widgets.add(_secHead('Sigorta / Vergi Kayitlari', PdfColors.blueGrey600));
+      widgets.add(_secHead('Sigorta / Vergi Kayıtları', PdfColors.blueGrey600));
       widgets.add(pw.SizedBox(height: 6));
       widgets.add(_pdfTable(
-        ['Tarih', 'Tur', 'Kurum', 'Police No', 'Tutar'],
+        ['Tarih', 'Tür', 'Kurum', 'Poliçe No', 'Tutar'],
         rd.insuranceRecords
             .map((r) => [
                   _dateFmt.format(r.date),
