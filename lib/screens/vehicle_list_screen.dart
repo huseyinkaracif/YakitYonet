@@ -17,6 +17,7 @@ import 'trip_screen.dart';
 import '../services/location_sharing_service.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/background_watermark.dart';
+import '../services/fuel_price_service.dart';
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -30,12 +31,14 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   Map<int, Map<String, dynamic>> _fuelStats = {};
   bool _loading = true;
   bool _isBannerView = true;
+  FuelPrices? _fuelPrices;
 
   @override
   void initState() {
     super.initState();
     _loadVehicles();
     _initLocationSharing();
+    _loadFuelPrices();
   }
 
   Future<void> _loadVehicles() async {
@@ -66,6 +69,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
           children: [
             _buildAppBar(),
             _buildGreeting(),
+            _buildFuelPriceBar(),
             Expanded(
               child: _loading
                   ? const Center(
@@ -275,6 +279,58 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
         ],
+      ),
+    );
+  }
+
+  Future<void> _loadFuelPrices() async {
+    final prices = await FuelPriceService.instance.getPrices();
+    if (!mounted) return;
+    setState(() => _fuelPrices = prices);
+  }
+
+  // ── Fuel Price Bar ─────────────────────────────────────────────────────────
+
+  Widget _buildFuelPriceBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _FuelPriceChip(
+              label: 'Benzin',
+              icon: Icons.local_gas_station_rounded,
+              price: _fuelPrices?.benzin,
+              color: AppTheme.fuelColor,
+              updatedAt: _fuelPrices?.updatedAt,
+            ),
+            const SizedBox(width: 8),
+            _FuelPriceChip(
+              label: 'Dizel',
+              icon: Icons.local_gas_station_rounded,
+              price: _fuelPrices?.dizel,
+              color: AppTheme.maintColor,
+              updatedAt: _fuelPrices?.updatedAt,
+            ),
+            const SizedBox(width: 8),
+            _FuelPriceChip(
+              label: 'LPG',
+              icon: Icons.propane_tank_rounded,
+              price: _fuelPrices?.lpg,
+              color: AppTheme.successColor,
+              updatedAt: _fuelPrices?.updatedAt,
+            ),
+            const SizedBox(width: 8),
+            _FuelPriceChip(
+              label: 'Elektrik',
+              icon: Icons.bolt_rounded,
+              price: _fuelPrices?.elektrik,
+              color: const Color(0xFF0891B2),
+              updatedAt: _fuelPrices?.updatedAt,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1125,6 +1181,84 @@ class _TripFabState extends State<_TripFab>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FuelPriceChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final double? price;
+  final Color color;
+  final DateTime? updatedAt;
+
+  const _FuelPriceChip({
+    required this.label,
+    required this.icon,
+    required this.price,
+    required this.color,
+    required this.updatedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF3C3836) : AppTheme.surfaceAlt;
+    final border = isDark ? const Color(0xFF44403C) : AppTheme.borderSubtle;
+    final priceText = price != null ? '${price!.toStringAsFixed(2)} ₺' : '--';
+
+    return GestureDetector(
+      onTap: () {
+        final timeStr = updatedAt != null
+            ? DateFormat('HH:mm').format(updatedAt!.toLocal())
+            : '--:--';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fiyatlar Ankara (06) bazlıdır · Güncelleme: $timeStr'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Container(
+        height: 54,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 6),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark
+                        ? const Color(0xFFA8A29E)
+                        : AppTheme.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  priceText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
