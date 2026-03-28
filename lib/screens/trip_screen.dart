@@ -1,5 +1,4 @@
 ﻿import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +6,8 @@ import 'package:flutter/services.dart';
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
+import '../services/fuel_price_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TripScreen extends StatefulWidget {
   final double? initialLat;
@@ -26,6 +27,8 @@ class _TripScreenState extends State<TripScreen>
   final _kmCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
   final _consumCtrl = TextEditingController();
+
+  bool _priceAutofilled = false;
 
   late final AnimationController _resultsAnim;
   late final Animation<double> _resultsFade;
@@ -68,18 +71,42 @@ class _TripScreenState extends State<TripScreen>
 
   Future<void> _loadStatsForVehicle(Vehicle v) async {
     if (v.id == null) return;
+
+    // Araç değişiminde autofill göstergesini sıfırla
+    if (mounted) setState(() => _priceAutofilled = false);
+
     final stats = await DatabaseHelper.instance.getVehicleFuelStats(v.id!);
     final l100 = (stats['litersPer100Km'] as num).toDouble();
     final avgPrice = (stats['avgPrice'] as num).toDouble();
     final defaultL100 = _defaultConsumption(v.fuelType);
     final defaultPrice = _defaultPrice(v.fuelType);
+
     if (!mounted) return;
     setState(() {
       _consumCtrl.text =
           (l100 > 0 ? l100 : defaultL100).toStringAsFixed(1);
-      _priceCtrl.text =
-          (avgPrice > 0 ? avgPrice : defaultPrice).toStringAsFixed(2);
+      if (avgPrice > 0) {
+        // Tarihsel ortalama varsa onu kullan
+        _priceCtrl.text = avgPrice.toStringAsFixed(2);
+        _priceAutofilled = false;
+      } else {
+        // Tarihsel veri yoksa şimdilik default koy, live fiyat aşağıda denenecek
+        _priceCtrl.text = defaultPrice.toStringAsFixed(2);
+      }
     });
+
+    // Tarihsel veri yoksa live fiyatı dene
+    if (avgPrice <= 0) {
+      final livePrices = await FuelPriceService.instance.getPrices();
+      if (!mounted) return;
+      final livePrice = livePrices?.priceFor(v.fuelType);
+      if (livePrice != null) {
+        setState(() {
+          _priceCtrl.text = livePrice.toStringAsFixed(2);
+          _priceAutofilled = true;
+        });
+      }
+    }
   }
 
   double _defaultConsumption(String fuelType) {
@@ -94,7 +121,7 @@ class _TripScreenState extends State<TripScreen>
   double _defaultPrice(String fuelType) {
     switch (fuelType) {
       case 'LPG': return 18.0;
-      case 'Elektrik': return 3.5;
+      case 'Elektrik': return 15.90;
       default: return 45.0;
     }
   }
@@ -105,8 +132,9 @@ class _TripScreenState extends State<TripScreen>
     final consum = double.tryParse(_consumCtrl.text.replaceAll(',', '.'));
     final ready = km != null && km > 0 && price != null && price > 0 && consum != null;
     
-    // Anlık değerlerin güncellenmesi için setState çağırıyoruz
-    setState(() {});
+    setState(() {
+      _priceAutofilled = false;
+    });
 
     if (ready) {
       _resultsAnim.forward();
@@ -352,8 +380,44 @@ class _TripScreenState extends State<TripScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Seyahat Bilgileri',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textHint)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Seyahat Bilgileri',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textHint)),
+                InkWell(
+                  onTap: () async {
+                    // Cihazdaki harita uygulamasını aç (Google Maps veya Apple Maps)
+                    final url = Uri.parse('https://maps.google.com/');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Harita uygulaması açılamadı')),
+                        );
+                      }
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.map_rounded, size: 16, color: AppTheme.accent),
+                        SizedBox(width: 6),
+                        Text('Haritada Seç', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             _inputField(
               controller: _kmCtrl,
@@ -371,6 +435,8 @@ class _TripScreenState extends State<TripScreen>
               icon: isElectric ? Icons.bolt_rounded : Icons.local_gas_station_rounded,
               iconColor: const Color(0xFFD97706),
               hint: '0.00',
+              helperText: _priceAutofilled ? '✓ Güncel fiyat uygulandı' : null,
+              helperColor: AppTheme.successColor,
             ),
             const SizedBox(height: 12),
             _inputField(
@@ -396,6 +462,7 @@ class _TripScreenState extends State<TripScreen>
     required Color iconColor,
     required String hint,
     String? helperText,
+    Color? helperColor,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
@@ -442,6 +509,11 @@ class _TripScreenState extends State<TripScreen>
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: iconColor, width: 1.5)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            helperText: helperText,
+            helperStyle: TextStyle(
+              color: helperColor ?? AppTheme.textHint,
+              fontSize: 11,
+            ),
           ),
         ),
       ],
