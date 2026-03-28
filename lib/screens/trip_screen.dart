@@ -388,14 +388,20 @@ class _TripScreenState extends State<TripScreen>
                 InkWell(
                   onTap: () async {
                     // Cihazdaki harita uygulamasını aç (Google Maps veya Apple Maps)
-                    final url = Uri.parse('https://maps.google.com/');
+                    final url = Uri.parse('geo:0,0?q='); // Platformun harita uygulamasını tetikler
                     if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                      await launchUrl(url);
                     } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Harita uygulaması açılamadı')),
-                        );
+                      // Yedeği, platformun tarayıcısında Google Maps açmak:
+                      final fallbackUrl = Uri.parse('https://maps.google.com/');
+                      if (await canLaunchUrl(fallbackUrl)) {
+                        await launchUrl(fallbackUrl, mode: LaunchMode.externalApplication);
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Harita uygulaması açılamadı')),
+                          );
+                        }
                       }
                     }
                   },
@@ -411,7 +417,7 @@ class _TripScreenState extends State<TripScreen>
                       children: const [
                         Icon(Icons.map_rounded, size: 16, color: AppTheme.accent),
                         SizedBox(width: 6),
-                        Text('Haritada Seç', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                        Text('Haritayı Aç', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
                       ],
                     ),
                   ),
@@ -446,7 +452,7 @@ class _TripScreenState extends State<TripScreen>
               icon: Icons.speed_rounded,
               iconColor: const Color(0xFF7C3AED),
               hint: '0.0',
-              helperText: 'Gecmis veriden',
+              helperText: 'Aracınızın ortalama ${isElectric ? "kWh" : "L"} tüketimi',
             ),
           ],
         ),

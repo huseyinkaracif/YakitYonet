@@ -1222,7 +1222,6 @@ class _FuelPriceChip extends StatelessWidget {
         );
       },
       child: Container(
-        height: 54,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: bg,
@@ -1237,6 +1236,7 @@ class _FuelPriceChip extends StatelessWidget {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   label,
