@@ -16,6 +16,7 @@ import '../main.dart';
 import 'trip_screen.dart';
 import '../services/location_sharing_service.dart';
 import 'package:latlong2/latlong.dart';
+import '../widgets/background_watermark.dart';
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -59,8 +60,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: _TripFab(onOpen: () => _openTripScreen(context)),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: SafeArea(
-        child: Column(
+      body: BackgroundWatermark(
+        child: SafeArea(
+          child: Column(
           children: [
             _buildAppBar(),
             _buildGreeting(),
@@ -95,6 +97,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                         ),
             ),
           ],
+        ),
         ),
       ),
     );
