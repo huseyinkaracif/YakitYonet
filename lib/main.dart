@@ -11,6 +11,8 @@ import 'screens/add_vehicle_screen.dart';
 import 'screens/vehicle_detail_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/backup_screen.dart';
+import 'screens/report_screen.dart';
+import 'screens/trip_screen.dart';
 import 'services/google_drive_service.dart';
 import 'services/notification_service.dart';
 
@@ -113,6 +115,17 @@ class YakitYonetApp extends StatelessWidget {
                 return _buildRoute(const StatisticsScreen(), settings);
               case '/backup':
                 return _buildRoute(const BackupScreen(), settings);
+              case '/report':
+                return _buildRoute(const ReportScreen(), settings);
+              case '/trip':
+                final args = settings.arguments as Map<String, dynamic>?;
+                return _buildRoute(
+                  TripScreen(
+                    initialLat: (args?['lat'] as num?)?.toDouble(),
+                    initialLng: (args?['lng'] as num?)?.toDouble(),
+                  ),
+                  settings,
+                );
               default:
                 return _buildRoute(const VehicleListScreen(), settings);
             }

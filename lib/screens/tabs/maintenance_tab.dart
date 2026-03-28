@@ -87,7 +87,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           const Text(
             'Henüz bakım kaydı yok',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.maintColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -106,7 +106,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
     final total = _records.fold(0.0, (sum, r) => sum + r.cost);
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       child: Row(
         children: [
           Container(
@@ -122,10 +122,10 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Toplam Bakım Gideri',
                 style: TextStyle(
-                    color: AppTheme.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 12,
                     fontWeight: FontWeight.w500),
               ),
@@ -147,8 +147,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
             children: [
               Text(
                 '${_records.length}',
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
@@ -196,14 +196,14 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Kategori Dağılımı',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -247,8 +247,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                             const SizedBox(width: 7),
                             Text(
                               cat,
-                              style: const TextStyle(
-                                color: AppTheme.textSecondary,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 fontSize: 12,
                               ),
                             ),
@@ -275,7 +275,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           child: Text(
             'Bakım Kayıtları',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.maintColor,
               fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
@@ -291,9 +291,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: AppTheme.surfaceFor(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.borderSubtle),
+                border: Border.all(color: AppTheme.borderFor(context)),
               ),
               child: Row(
                 children: [
@@ -313,8 +313,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                       children: [
                         Text(
                           r.title,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -341,8 +341,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                     children: [
                       Text(
                         '${r.cost.toStringAsFixed(0)} ₺',
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
                         ),
@@ -399,7 +399,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.surfaceFor(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -421,16 +421,16 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.borderSubtle,
+                      color: AppTheme.borderFor(context),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Yeni Bakım Kaydı',
                   style: TextStyle(
-                    color: AppTheme.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -438,7 +438,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 const SizedBox(height: 20),
                 TextField(
                   controller: titleController,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Bakım Başlığı (örn: Yağ Değişimi)',
                   ),
@@ -450,8 +450,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                       child: TextField(
                         controller: kmController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                            color: AppTheme.textPrimary),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface),
                         decoration:
                             const InputDecoration(labelText: 'KM'),
                       ),
@@ -461,8 +461,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                       child: TextField(
                         controller: costController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                            color: AppTheme.textPrimary),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface),
                         decoration: const InputDecoration(
                             labelText: 'Tutar (₺)'),
                       ),
@@ -483,8 +483,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                       .map((v) => DropdownMenuItem(
                           value: v,
                           child: Text(v,
-                              style: const TextStyle(
-                                  color: AppTheme.textPrimary))))
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface))))
                       .toList(),
                   onChanged: (val) =>
                       setModalState(() => category = val!),
@@ -512,9 +512,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceAlt,
+                    color: AppTheme.surfaceAltFor(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.borderSubtle),
+                    border: Border.all(color: AppTheme.borderFor(context)),
                   ),
                   child: Column(
                     children: [
@@ -523,11 +523,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                           const Icon(Icons.notifications_active_rounded,
                               color: AppTheme.textHint, size: 18),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Sonraki Bakım İçin Hatırlat',
                               style: TextStyle(
-                                color: AppTheme.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 14,
                               ),
                             ),
@@ -556,9 +556,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.surface,
+                              color: AppTheme.surfaceFor(context),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.borderSubtle),
+                              border: Border.all(color: AppTheme.borderFor(context)),
                             ),
                             child: Row(
                               children: [
@@ -566,7 +566,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                                 const SizedBox(width: 8),
                                 Text(
                                   'Hatırlatma Tarihi: ${DateFormat('dd.MM.yyyy').format(reminderDate)}',
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
                                 ),
                               ],
                             ),

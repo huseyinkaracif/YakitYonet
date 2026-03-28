@@ -47,9 +47,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(child: CircularProgressIndicator(color: AppTheme.accent)),
+        body: const Center(child: CircularProgressIndicator(color: AppTheme.accent)),
       );
     }
 
@@ -98,17 +98,17 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                       child: Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back_rounded,
-                                color: AppTheme.textPrimary),
+                            icon: Icon(Icons.arrow_back_rounded,
+                                color: Theme.of(context).iconTheme.color),
                             onPressed: () => Navigator.pop(context),
                           ),
                           Expanded(
                             child: Text(
                               vehicle.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 letterSpacing: -0.3,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -127,10 +127,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                     Container(
                       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                       decoration: BoxDecoration(
-                        color: AppTheme.surface,
+                        color: Theme.of(context).cardTheme.color ?? AppTheme.surface,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: AppTheme.borderSubtle, width: 1),
+                            color: Theme.of(context).dividerTheme.color ?? AppTheme.borderSubtle, width: 1),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x081C1917),
@@ -163,6 +163,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                             child: Row(
                               children: [
                                 _infoChip(
+                                  context: context,
                                   label: 'Son KM',
                                   value:
                                       '${vehicle.currentKm.toStringAsFixed(0)}',
@@ -171,6 +172,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                                 ),
                                 const SizedBox(width: 10),
                                 _infoChip(
+                                  context: context,
                                   label: 'Yakıt',
                                   value: vehicle.fuelType,
                                   icon: AppTheme.getFuelTypeIcon(
@@ -179,6 +181,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                                 ),
                                 const SizedBox(width: 10),
                                 _infoChip(
+                                  context: context,
                                   label: 'Depo',
                                   value:
                                       '${vehicle.tankCapacity.toStringAsFixed(0)} ${vehicle.fuelType == 'Elektrik' ? 'kWh' : 'L'}',
@@ -196,10 +199,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                     Container(
                       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceAlt,
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF292524) : AppTheme.surfaceAlt,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                            color: AppTheme.borderSubtle, width: 1),
+                            color: Theme.of(context).dividerColor, width: 1),
                       ),
                       padding: const EdgeInsets.all(3),
                       child: TabBar(
@@ -217,7 +220,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         labelColor: Colors.white,
-                        unselectedLabelColor: AppTheme.textSecondary,
+                        unselectedLabelColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFA8A29E) : AppTheme.textSecondary,
                         tabs: const [
                           Tab(
                             child: Row(
@@ -287,6 +290,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
   }
 
   Widget _infoChip({
+    required BuildContext context,
     required String label,
     required String value,
     required IconData icon,
@@ -318,8 +322,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFA8A29E) : AppTheme.textSecondary,
                 fontSize: 10,
               ),
               textAlign: TextAlign.center,

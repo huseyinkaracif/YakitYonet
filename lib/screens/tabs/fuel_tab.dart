@@ -110,8 +110,8 @@ class _FuelTabState extends State<FuelTab> {
               children: [
                 FloatingActionButton.extended(
                   heroTag: 'scan_fab',
-                  backgroundColor: AppTheme.surface,
-                  foregroundColor: AppTheme.textSecondary,
+                  backgroundColor: AppTheme.surfaceFor(context),
+                  foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   elevation: 1,
                   onPressed: _scanReceipt,
                   icon: const Icon(Icons.document_scanner_rounded, size: 20),
@@ -155,7 +155,7 @@ class _FuelTabState extends State<FuelTab> {
           const Text(
             'Henüz yakıt kaydı yok',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.accent,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -230,9 +230,9 @@ class _FuelTabState extends State<FuelTab> {
       width: (MediaQuery.of(context).size.width - 40) / 2,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: AppTheme.surfaceFor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.borderSubtle),
+        border: Border.all(color: AppTheme.borderFor(context)),
       ),
       child: Row(
         children: [
@@ -277,15 +277,15 @@ class _FuelTabState extends State<FuelTab> {
 
   Widget _buildChartCard(String title, Widget chart) {
     return Container(
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -511,7 +511,7 @@ class _FuelTabState extends State<FuelTab> {
           child: Text(
             'Son Kayıtlar',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.accent,
               fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
@@ -523,16 +523,16 @@ class _FuelTabState extends State<FuelTab> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: AppTheme.surfaceFor(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.borderSubtle),
+              border: Border.all(color: AppTheme.borderFor(context)),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentLight,
+                    color: AppTheme.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.local_gas_station_rounded,
@@ -545,8 +545,8 @@ class _FuelTabState extends State<FuelTab> {
                     children: [
                       Text(
                         DateFormat('dd MMM yyyy').format(record.date),
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -554,8 +554,8 @@ class _FuelTabState extends State<FuelTab> {
                       const SizedBox(height: 2),
                       Text(
                         '${record.liters.toStringAsFixed(1)} L  ·  ${record.pricePerLiter.toStringAsFixed(2)} ₺/L',
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           fontSize: 12,
                         ),
                       ),
@@ -600,12 +600,27 @@ class _FuelTabState extends State<FuelTab> {
     if (xFile == null) return;
 
     if (!mounted) return;
-    
-    // Show loading
+
+    // Show loading overlay
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppTheme.accent),
+                SizedBox(height: 16),
+                Text('Fiş okunuyor…',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
 
     final ocrService = OcrService();
@@ -615,16 +630,319 @@ class _FuelTabState extends State<FuelTab> {
     if (!mounted) return;
     Navigator.pop(context); // Close loading
 
-    if (!result.isAccurate && result.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.errorMessage!),
-          backgroundColor: AppTheme.dangerColor,
-        ),
-      );
+    // Always show the verification popup regardless of accuracy
+    _showOcrResultDialog(result);
+  }
+
+  /// Shows a dedicated verification popup after OCR, allowing user to
+  /// check / correct extracted fields before saving.
+  void _showOcrResultDialog(OcrResult result) {
+    DateTime selectedDate = result.date ?? DateTime.now();
+    final dateController =
+        TextEditingController(text: DateFormat('dd/MM/yyyy').format(selectedDate));
+    final kmController = TextEditingController();
+    final litersController =
+        TextEditingController(text: result.liters?.toStringAsFixed(2) ?? '');
+    final totalController =
+        TextEditingController(text: result.totalCost?.toStringAsFixed(2) ?? '');
+    bool fullTank = true;
+
+    double? calcPricePerLiter(String litStr, String totStr) {
+      final l = double.tryParse(litStr);
+      final t = double.tryParse(totStr);
+      if (l != null && t != null && l > 0) return t / l;
+      return null;
     }
-    
-    _showAddFuelDialog(prefilledData: result);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final ppl = calcPricePerLiter(
+              litersController.text, totalController.text);
+          return AlertDialog(
+            backgroundColor: AppTheme.surfaceFor(ctx),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.document_scanner_rounded,
+                      color: AppTheme.accent, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Fiş Sonucu',
+                        style: TextStyle(
+                          color: Theme.of(ctx).colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        result.isAccurate
+                            ? 'Veriler başarıyla okundu'
+                            : 'Lütfen verileri kontrol edin',
+                        style: TextStyle(
+                          color: result.isAccurate
+                              ? AppTheme.successColor
+                              : AppTheme.accent,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Warning banner if OCR was not accurate
+                  if (!result.isAccurate && result.errorMessage != null)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accent.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppTheme.accent.withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: AppTheme.accent, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              result.errorMessage!,
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppTheme.accent
+                                    : AppTheme.accentDark,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Date
+                  GestureDetector(
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: ctx,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      );
+                      if (date != null) {
+                        setS(() {
+                          selectedDate = date;
+                          dateController.text =
+                              DateFormat('dd/MM/yyyy').format(date);
+                        });
+                      }
+                    },
+                    child: AbsorbPointer(
+                      child: TextField(
+                        controller: dateController,
+                        style: TextStyle(
+                            color: Theme.of(ctx).colorScheme.onSurface),
+                        decoration: const InputDecoration(
+                          labelText: 'Tarih',
+                          prefixIcon: Icon(Icons.calendar_today_rounded,
+                              color: AppTheme.textHint, size: 18),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // KM (not from OCR, user must enter)
+                  TextField(
+                    controller: kmController,
+                    keyboardType: TextInputType.number,
+                    style:
+                        TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
+                    decoration: const InputDecoration(
+                      labelText: 'Kilometre *',
+                      prefixIcon: Icon(Icons.speed_rounded,
+                          color: AppTheme.textHint, size: 18),
+                      suffixText: 'km',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: litersController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.onSurface),
+                          onChanged: (_) => setS(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Litre',
+                            prefixIcon: const Icon(Icons.water_drop_rounded,
+                                color: AppTheme.textHint, size: 18),
+                            suffixText: 'L',
+                            filled: result.liters != null,
+                            fillColor: result.liters != null
+                                ? AppTheme.successColor.withValues(alpha: 0.07)
+                                : null,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: totalController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.onSurface),
+                          onChanged: (_) => setS(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Toplam ₺',
+                            prefixIcon: const Icon(Icons.payments_rounded,
+                                color: AppTheme.textHint, size: 18),
+                            filled: result.totalCost != null,
+                            fillColor: result.totalCost != null
+                                ? AppTheme.successColor.withValues(alpha: 0.07)
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Computed price per litre
+                  if (ppl != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accent.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppTheme.accent.withValues(alpha: 0.25)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.local_gas_station_rounded,
+                              color: AppTheme.accent, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Birim Fiyat: ${ppl.toStringAsFixed(2)} ₺/L',
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppTheme.accent
+                                  : AppTheme.accentDark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  // Full tank toggle
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceAltFor(ctx),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.borderFor(ctx)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_gas_station_rounded,
+                            color: AppTheme.textHint, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Depo doldu mu?',
+                            style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.onSurface,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Switch(
+                          value: fullTank,
+                          onChanged: (v) => setS(() => fullTank = v),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('İptal'),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.save_rounded, size: 16),
+                label: const Text('Kaydet'),
+                onPressed: () async {
+                  final km = double.tryParse(kmController.text);
+                  final liters = double.tryParse(litersController.text);
+                  final total = double.tryParse(totalController.text);
+                  final pricePerLiter =
+                      (liters != null && total != null && liters > 0)
+                          ? total / liters
+                          : null;
+
+                  if (km == null ||
+                      liters == null ||
+                      total == null ||
+                      pricePerLiter == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Kilometre, litre ve tutar zorunludur')),
+                    );
+                    return;
+                  }
+
+                  final record = FuelRecord(
+                    vehicleId: widget.vehicleId,
+                    date: selectedDate,
+                    km: km,
+                    liters: liters,
+                    pricePerLiter: pricePerLiter,
+                    totalCost: total,
+                    fullTank: fullTank,
+                  );
+                  await DatabaseHelper.instance.insertFuelRecord(record);
+                  await _loadData();
+                  widget.onDataChanged();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _showAddFuelDialog({OcrResult? prefilledData}) {
@@ -658,7 +976,7 @@ class _FuelTabState extends State<FuelTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.surfaceFor(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -676,16 +994,16 @@ class _FuelTabState extends State<FuelTab> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.borderSubtle,
+                      color: AppTheme.borderFor(context),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Yeni Yakıt Alımı',
                   style: TextStyle(
-                    color: AppTheme.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -710,7 +1028,7 @@ class _FuelTabState extends State<FuelTab> {
                   child: AbsorbPointer(
                     child: TextField(
                       controller: dateController,
-                      style: const TextStyle(color: AppTheme.textPrimary),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Tarih',
                         prefixIcon: Icon(Icons.calendar_today_rounded,
@@ -723,7 +1041,7 @@ class _FuelTabState extends State<FuelTab> {
                 TextField(
                   controller: kmController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Kilometre',
                     prefixIcon: Icon(Icons.speed_rounded,
@@ -739,7 +1057,7 @@ class _FuelTabState extends State<FuelTab> {
                         controller: litersController,
                         keyboardType: TextInputType.number,
                         style:
-                            const TextStyle(color: AppTheme.textPrimary),
+                            TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         onChanged: (_) => calcTotal(),
                         decoration: const InputDecoration(
                           labelText: 'Litre',
@@ -755,7 +1073,7 @@ class _FuelTabState extends State<FuelTab> {
                         controller: priceController,
                         keyboardType: TextInputType.number,
                         style:
-                            const TextStyle(color: AppTheme.textPrimary),
+                            TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         onChanged: (_) => calcTotal(),
                         decoration: const InputDecoration(
                           labelText: 'Birim Fiyat',
@@ -771,7 +1089,7 @@ class _FuelTabState extends State<FuelTab> {
                 TextField(
                   controller: totalController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Toplam Tutar',
                     prefixIcon: Icon(Icons.payments_rounded,
@@ -784,20 +1102,20 @@ class _FuelTabState extends State<FuelTab> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceAlt,
+                    color: AppTheme.surfaceAltFor(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.borderSubtle),
+                    border: Border.all(color: AppTheme.borderFor(context)),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.local_gas_station_rounded,
                           color: AppTheme.textHint, size: 18),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Depo doldu mu?',
                           style: TextStyle(
-                            color: AppTheme.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 14,
                           ),
                         ),

@@ -120,7 +120,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
           const Text(
             'Henüz sigorta/vergi kaydı yok',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.insurColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -143,9 +143,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: AppTheme.surfaceFor(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.borderSubtle),
+              border: Border.all(color: AppTheme.borderFor(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,9 +178,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: AppTheme.surfaceFor(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.borderSubtle),
+              border: Border.all(color: AppTheme.borderFor(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,15 +214,15 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
 
   Widget _buildChartCard(String title, Widget chart) {
     return Container(
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.cardDecorationFor(context),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -293,8 +293,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                   const SizedBox(width: 7),
                   Text(
                     e.key,
-                    style: const TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 11),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 11),
                   ),
                 ],
               ),
@@ -393,7 +393,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
           child: Text(
             'Kayıt Geçmişi',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.insurColor,
               fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
@@ -407,9 +407,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: AppTheme.surfaceFor(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.borderSubtle),
+              border: Border.all(color: AppTheme.borderFor(context)),
             ),
             child: Row(
               children: [
@@ -428,8 +428,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                     children: [
                       Text(
                         r.type,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -437,8 +437,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                       const SizedBox(height: 2),
                       Text(
                         '${DateFormat('dd MMM yyyy').format(r.date)}${r.provider != null ? '  ·  ${r.provider}' : ''}',
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           fontSize: 12,
                         ),
                       ),
@@ -482,7 +482,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.surfaceFor(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -500,16 +500,16 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.borderSubtle,
+                      color: AppTheme.borderFor(context),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Yeni Sigorta / Vergi Kaydı',
                   style: TextStyle(
-                    color: AppTheme.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -527,8 +527,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                       .map((t) => DropdownMenuItem(
                             value: t,
                             child: Text(t,
-                                style: const TextStyle(
-                                    color: AppTheme.textPrimary)),
+                                style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface)),
                           ))
                       .toList(),
                   onChanged: (v) {
@@ -553,7 +553,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                   child: AbsorbPointer(
                     child: TextField(
                       controller: dateCtrl,
-                      style: const TextStyle(color: AppTheme.textPrimary),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Tarih',
                         prefixIcon: Icon(Icons.calendar_today_rounded,
@@ -566,7 +566,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 TextField(
                   controller: costCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Tutar',
                     prefixIcon: Icon(Icons.payments_rounded,
@@ -577,7 +577,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: providerCtrl,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Kurum/Şirket (Opsiyonel)',
                     prefixIcon: Icon(Icons.business_rounded,
@@ -587,7 +587,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: policyCtrl,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Poliçe No (Opsiyonel)',
                     prefixIcon: Icon(Icons.tag_rounded,
@@ -598,9 +598,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceAlt,
+                    color: AppTheme.surfaceAltFor(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.borderSubtle),
+                    border: Border.all(color: AppTheme.borderFor(context)),
                   ),
                   child: Column(
                     children: [
@@ -609,11 +609,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                           const Icon(Icons.notifications_active_rounded,
                               color: AppTheme.textHint, size: 18),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Hatırlatıcı Kur (Bitiş Tarihi)',
                               style: TextStyle(
-                                color: AppTheme.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 14,
                               ),
                             ),
@@ -642,9 +642,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.surface,
+                              color: AppTheme.surfaceFor(context),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.borderSubtle),
+                              border: Border.all(color: AppTheme.borderFor(context)),
                             ),
                             child: Row(
                               children: [
@@ -652,7 +652,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                                 const SizedBox(width: 8),
                                 Text(
                                   'Hatırlatma Tarihi: ${DateFormat('dd MMM yyyy').format(reminderDate)}',
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
                                 ),
                               ],
                             ),

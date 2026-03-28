@@ -13,6 +13,9 @@ import '../services/google_drive_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
+import 'trip_screen.dart';
+import '../services/location_sharing_service.dart';
+import 'package:latlong2/latlong.dart';
 
 class VehicleListScreen extends StatefulWidget {
   const VehicleListScreen({super.key});
@@ -31,6 +34,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   void initState() {
     super.initState();
     _loadVehicles();
+    _initLocationSharing();
   }
 
   Future<void> _loadVehicles() async {
@@ -53,6 +57,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      floatingActionButton: _TripFab(onOpen: () => _openTripScreen(context)),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: Column(
           children: [
@@ -92,6 +98,41 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         ),
       ),
     );
+  }
+
+  void _openTripScreen(BuildContext context, [LatLng? prefilled]) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      transitionDuration: const Duration(milliseconds: 380),
+      pageBuilder: (_, __, ___) => TripScreen(
+        initialLat: prefilled?.latitude,
+        initialLng: prefilled?.longitude,
+      ),
+      transitionBuilder: (ctx, anim, _, child) {
+        final curved =
+            CurvedAnimation(parent: anim, curve: Curves.easeOutQuint);
+        return ScaleTransition(
+          scale: curved,
+          alignment: Alignment.bottomRight,
+          child: FadeTransition(opacity: anim, child: child),
+        );
+      },
+    );
+  }
+
+  Future<void> _initLocationSharing() async {
+    // Check if app was launched by tapping a geo: link or maps share
+    final initial = await LocationSharingService.getInitialSharedLocation();
+    if (initial != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _openTripScreen(context, initial));
+    }
+    // Listen for future shares while app is open
+    LocationSharingService.listenForSharedLocations((loc) {
+      if (mounted) _openTripScreen(context, loc);
+    });
   }
 
   // ── App Bar ────────────────────────────────────────────────────────────────
@@ -170,6 +211,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 case 'stats':
                   Navigator.pushNamed(context, '/statistics');
                   break;
+                case 'report':
+                  Navigator.pushNamed(context, '/report');
+                  break;
                 case 'export':
                   _exportData();
                   break;
@@ -184,6 +228,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
             itemBuilder: (context) => [
               _menuItem('stats', 'Genel İstatistikler',
                   Icons.bar_chart_rounded, AppTheme.accent),
+              _menuItem('report', 'Raporlama',
+                  Icons.description_rounded, const Color(0xFF0891B2)),
               _menuItem('export', 'Dışa Aktar',
                   Icons.upload_rounded, AppTheme.successColor),
               _menuItem('import', 'İçe Aktar',
@@ -324,20 +370,20 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   size: 40, color: AppTheme.accent),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Henüz araç eklenmemiş',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Sağ üstteki + butonuna tıklayarak\nilk aracınızı ekleyin.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppTheme.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -480,8 +526,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                               left: 14,
                               child: Text(
                                 vehicle.name,
-                                style: const TextStyle(
-                                  color: AppTheme.textPrimary,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -509,7 +555,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                       _statCell(
                         '${vehicle.currentKm.toStringAsFixed(0)} km',
                         'Son Kilometre',
-                        color: AppTheme.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       _vDivider(),
                       _statCell(
@@ -525,7 +571,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   Divider(
                       height: 1,
                       thickness: 1,
-                      color: AppTheme.dividerColor),
+                      color: Theme.of(context).dividerTheme.color ?? AppTheme.dividerColor),
                   const SizedBox(height: 10),
                   // Row 2
                   Row(
@@ -536,17 +582,17 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                             : '—',
                         'L / 100 km',
                         color: litersPer100 > 0
-                            ? AppTheme.textPrimary
+                            ? Theme.of(context).colorScheme.onSurface
                             : AppTheme.textHint,
                       ),
-                      _vDivider(),
+                      _vDivider(context),
                       _statCell(
                         totalCost > 0
                             ? '${totalCost.toStringAsFixed(0)} ₺'
                             : '—',
                         'Toplam Harcama',
                         color: totalCost > 0
-                            ? AppTheme.textPrimary
+                            ? Theme.of(context).colorScheme.onSurface
                             : AppTheme.textHint,
                       ),
                     ],
@@ -555,7 +601,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   Divider(
                       height: 1,
                       thickness: 1,
-                      color: AppTheme.dividerColor),
+                      color: Theme.of(context).dividerTheme.color ?? AppTheme.dividerColor),
                   const SizedBox(height: 10),
                   // Row 3
                   Row(
@@ -563,7 +609,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                       _statCell(
                         '$count alım',
                         'Yakıt Alımı',
-                        color: AppTheme.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       _vDivider(),
                       Expanded(
@@ -647,8 +693,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 children: [
                   Text(
                     vehicle.name,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
@@ -784,11 +830,12 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     );
   }
 
-  Widget _vDivider() {
+  Widget _vDivider([BuildContext? ctx]) {
+    final c = ctx ?? context;
     return Container(
       width: 1,
       height: 32,
-      color: AppTheme.dividerColor,
+      color: Theme.of(c).dividerTheme.color ?? AppTheme.dividerColor,
       margin: const EdgeInsets.symmetric(horizontal: 12),
     );
   }
@@ -1005,3 +1052,79 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     }
   }
 }
+
+// ── Animated Trip FAB ────────────────────────────────────────────────────────
+class _TripFab extends StatefulWidget {
+  final VoidCallback onOpen;
+  const _TripFab({required this.onOpen});
+
+  @override
+  State<_TripFab> createState() => _TripFabState();
+}
+
+class _TripFabState extends State<_TripFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 180));
+    _scale = Tween<double>(begin: 1.0, end: 0.88)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        widget.onOpen();
+      },
+      onTapCancel: () => _ctrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppTheme.accent,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accent.withValues(alpha: 0.45),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.route_rounded, color: Colors.white, size: 28),
+              SizedBox(width: 8),
+              Text(
+                'Seyahat Hesaplayıcı',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

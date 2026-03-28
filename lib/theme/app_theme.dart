@@ -415,6 +415,38 @@ class AppTheme {
         ),
       );
 
+  // ── Theme-aware helpers ─────────────────────────────────────────────────────
+
+  /// Card / surface background colour that adapts to light/dark.
+  static Color surfaceFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFF292524)
+          : surface;
+
+  /// Slightly elevated surface (alt fill) that adapts to light/dark.
+  static Color surfaceAltFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFF3C3836)
+          : surfaceAlt;
+
+  /// Card border colour that adapts to light/dark.
+  static Color borderFor(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFF44403C)
+          : borderSubtle;
+
+  /// Theme-aware card decoration (replaces static cardDecoration / glassDecoration).
+  static BoxDecoration cardDecorationFor(BuildContext ctx) => BoxDecoration(
+        color: surfaceFor(ctx),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        border: Border.fromBorderSide(
+            BorderSide(color: borderFor(ctx), width: 1)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x061C1917), blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      );
+
   // ── Fuel Type Helpers ──────────────────────────────────────────────────────
 
   static Color getFuelTypeColor(String fuelType) {
