@@ -120,7 +120,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
           const Text(
             'Henüz sigorta/vergi kaydı yok',
             style: TextStyle(
-              color: AppTheme.insurColor,
+              color: AppTheme.textSecondary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -155,8 +155,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const SizedBox(height: 6),
                 Text(
                   '${totalCost.toStringAsFixed(0)} ₺',
-                  style: const TextStyle(
-                    color: AppTheme.accent,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -190,8 +190,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const SizedBox(height: 6),
                 Text(
                   '${_records.length}',
-                  style: const TextStyle(
-                    color: AppTheme.maintColor,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),

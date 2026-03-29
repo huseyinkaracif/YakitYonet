@@ -560,7 +560,7 @@ class _TripScreenState extends State<TripScreen>
                 color: const Color(0xFF16A34A),
                 question: 'Toplam Maliyet',
                 answer: 'TL ${_totalCost.toStringAsFixed(2)}',
-                detail: '${(_km ?? 0).toStringAsFixed(0)} km x TL ${_costPerKm.toStringAsFixed(2)}/km',
+                detail: '${(_km ?? 0).toStringAsFixed(0)} km · ${_costPerKm.toStringAsFixed(2)} ₺/km',
                 isDark: isDark,
               ),
               const SizedBox(height: 10),

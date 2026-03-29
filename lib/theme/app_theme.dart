@@ -22,7 +22,7 @@ class AppTheme {
 
   // Category semantic colors
   static const Color fuelColor     = Color(0xFFD97706); // amber — fuel
-  static const Color maintColor    = Color(0xFF475569); // slate — maintenance
+  static const Color maintColor    = Color(0xFF0D9488); // teal — maintenance
   static const Color insurColor    = Color(0xFF64748B); // slate-600 — insurance
 
   // Status

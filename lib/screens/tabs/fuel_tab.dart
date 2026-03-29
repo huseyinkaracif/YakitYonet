@@ -252,7 +252,7 @@ class _FuelTabState extends State<FuelTab> {
                 Text(
                   value,
                   style: TextStyle(
-                    color: color,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -642,7 +642,7 @@ class _FuelTabState extends State<FuelTab> {
         TextEditingController(text: DateFormat('dd/MM/yyyy').format(selectedDate));
     final kmController = TextEditingController();
     final litersController =
-        TextEditingController(text: result.liters?.toStringAsFixed(2) ?? '');
+        TextEditingController(text: result.liters?.toStringAsFixed(3) ?? '');
     final totalController =
         TextEditingController(text: result.totalCost?.toStringAsFixed(2) ?? '');
     bool fullTank = true;
@@ -659,8 +659,9 @@ class _FuelTabState extends State<FuelTab> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
-          final ppl = calcPricePerLiter(
-              litersController.text, totalController.text);
+          // Prefer directly parsed pricePerLiter; fall back to computed
+          final ppl = result.pricePerLiter ??
+              calcPricePerLiter(litersController.text, totalController.text);
           return AlertDialog(
             backgroundColor: AppTheme.surfaceFor(ctx),
             insetPadding:

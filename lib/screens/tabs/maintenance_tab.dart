@@ -87,7 +87,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           const Text(
             'Henüz bakım kaydı yok',
             style: TextStyle(
-              color: AppTheme.maintColor,
+              color: AppTheme.textSecondary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -323,7 +323,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                         Text(
                           r.category,
                           style: const TextStyle(
-                            color: AppTheme.maintColor,
+                            color: AppTheme.textHint,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
