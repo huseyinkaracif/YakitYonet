@@ -18,20 +18,27 @@ import '../services/location_sharing_service.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/background_watermark.dart';
 import '../services/fuel_price_service.dart';
+import '../services/widget_service.dart';
 
 class VehicleListScreen extends StatefulWidget {
-  const VehicleListScreen({super.key});
+  final Uri? initialWidgetUri;
+  const VehicleListScreen({super.key, this.initialWidgetUri});
 
   @override
   State<VehicleListScreen> createState() => _VehicleListScreenState();
 }
 
 class _VehicleListScreenState extends State<VehicleListScreen> {
+  bool _handledWidgetUri = false;
   List<Vehicle> _vehicles = [];
   Map<int, Map<String, dynamic>> _fuelStats = {};
   bool _loading = true;
   bool _isBannerView = true;
   FuelPrices? _fuelPrices;
+  int? _defaultVehicleId;
+  // ignore: cancel_subscriptions
+  late final dynamic _widgetClickSub;
+  late final AppLifecycleListener _lifecycleListener;
 
   @override
   void initState() {
@@ -39,6 +46,23 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     _loadVehicles();
     _initLocationSharing();
     _loadFuelPrices();
+    // Widget tapped while app is already running
+    _widgetClickSub = WidgetService.widgetClickedStream.listen((uri) {
+      if (WidgetService.isAddFuelUri(uri)) {
+        _navigateToDefaultVehicleAddFuel();
+      }
+    });
+    // Re-push data to widgets whenever the app comes back to foreground
+    _lifecycleListener = AppLifecycleListener(
+      onResume: _loadVehicles,
+    );
+  }
+
+  @override
+  void dispose() {
+    _widgetClickSub?.cancel();
+    _lifecycleListener.dispose();
+    super.dispose();
   }
 
   Future<void> _loadVehicles() async {
@@ -50,11 +74,63 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         stats[v.id!] = await DatabaseHelper.instance.getVehicleFuelStats(v.id!);
       }
     }
+
+    int? defaultId = await WidgetService.getDefaultVehicleId();
+
+    if (vehicles.isNotEmpty) {
+      Vehicle defaultVehicle;
+      if (defaultId != null) {
+        final found = vehicles.where((v) => v.id == defaultId).toList();
+        defaultVehicle = found.isNotEmpty ? found.first : vehicles.first;
+        if (found.isEmpty) defaultId = null;
+      } else {
+        // No explicit default → first vehicle is auto-default, persist it
+        defaultVehicle = vehicles.first;
+        defaultId = vehicles.first.id;
+        await WidgetService.setDefaultVehicleId(defaultId);
+      }
+      final defaultStats = stats[defaultVehicle.id] ?? {};
+      WidgetService.updateWidgetData(
+        defaultVehicle,
+        costPerKm: (defaultStats['costPerKm'] as num?)?.toDouble() ?? 0.0,
+        litersPer100: (defaultStats['litersPer100Km'] as num?)?.toDouble() ?? 0.0,
+      );
+    } else {
+      WidgetService.updateWidgetData(null);
+    }
+
     setState(() {
       _vehicles = vehicles;
       _fuelStats = stats;
+      _defaultVehicleId = defaultId;
       _loading = false;
     });
+
+    _handleWidgetIntent();
+  }
+
+  void _handleWidgetIntent() {
+    if (!_handledWidgetUri &&
+        WidgetService.isAddFuelUri(widget.initialWidgetUri) &&
+        _vehicles.isNotEmpty) {
+      _handledWidgetUri = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToDefaultVehicleAddFuel();
+      });
+    }
+  }
+
+  void _navigateToDefaultVehicleAddFuel() {
+    if (_vehicles.isEmpty) return;
+    final targetVehicle = _defaultVehicleId != null
+        ? _vehicles.firstWhere((v) => v.id == _defaultVehicleId,
+            orElse: () => _vehicles.first)
+        : _vehicles.first;
+    Navigator.pushNamed(
+      context,
+      '/vehicle-detail',
+      arguments: {'vehicleId': targetVehicle.id!, 'openAddFuel': true},
+    ).then((_) => _loadVehicles());
   }
 
   @override
@@ -517,13 +593,23 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                           Positioned(
                             bottom: 12,
                             left: 14,
-                            child: Text(
-                              vehicle.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  vehicle.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (vehicle.id == _defaultVehicleId) ...
+                                  const [
+                                    SizedBox(width: 6),
+                                    Icon(Icons.star_rounded,
+                                        size: 16, color: Color(0xFFFF9800)),
+                                  ],
+                              ],
                             ),
                           ),
                           Positioned(
@@ -583,13 +669,23 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                             Positioned(
                               bottom: 12,
                               left: 14,
-                              child: Text(
-                                vehicle.name,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    vehicle.name,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (vehicle.id == _defaultVehicleId) ...
+                                    const [
+                                      SizedBox(width: 6),
+                                      Icon(Icons.star_rounded,
+                                          size: 16, color: Color(0xFFFF9800)),
+                                    ],
+                                ],
                               ),
                             ),
                             Positioned(
@@ -750,13 +846,25 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    vehicle.name,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          vehicle.name,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (vehicle.id == _defaultVehicleId) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.star_rounded,
+                            size: 13, color: Color(0xFFFF9800)),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   _fuelBadge(vehicle.fuelType, fuelColor, fontSize: 11),

@@ -14,27 +14,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   String _backupPreference = 'off';
 
-  final List<OnboardingPage> _pages = [
+  static const List<OnboardingPage> _pages = [
     OnboardingPage(
-      icon: Icons.local_gas_station_rounded,
+      imagePath: 'assets/images/onboarding_welcome.png',
       title: 'YakıtYönet\'e\nHoş Geldiniz',
       description:
           'Araçlarınızın yakıt tüketimini, bakımlarını ve masraflarını kolayca takip edin.',
-      color: AppTheme.accent,
+      accentColor: AppTheme.accent,
     ),
     OnboardingPage(
-      icon: Icons.directions_car_rounded,
+      imagePath: 'assets/images/onboarding_vehicles.png',
       title: 'Araçlarınızı\nEkleyin',
       description:
           'Birden fazla araç ekleyerek her birinin masraflarını ayrı ayrı takip edin.',
-      color: AppTheme.maintColor,
+      accentColor: AppTheme.maintColor,
     ),
     OnboardingPage(
-      icon: Icons.bar_chart_rounded,
+      imagePath: 'assets/images/onboarding_stats.png',
       title: 'Detaylı\nİstatistikler',
       description:
           'TL/KM, L/100KM verileri, bakım maliyetleri ve sigorta giderlerini analiz edin.',
-      color: AppTheme.successColor,
+      accentColor: AppTheme.successColor,
     ),
   ];
 
@@ -80,7 +80,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const Text(
                     'YakıtYönet',
                     style: TextStyle(
-                      color: AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -137,7 +136,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           borderRadius: BorderRadius.circular(3),
                           color: _currentPage == index
                               ? AppTheme.accent
-                              : AppTheme.borderSubtle,
+                              : Theme.of(context).dividerTheme.color ?? AppTheme.borderSubtle,
                         ),
                       ),
                     ),
@@ -177,40 +176,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildInfoPage(OnboardingPage page) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
+      padding: const EdgeInsets.fromLTRB(32, 16, 32, 16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: page.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                  color: page.color.withValues(alpha: 0.2), width: 1),
+          // Illustration
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Image.asset(
+                page.imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(
+                    color: page.accentColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.image_rounded,
+                    size: 56,
+                    color: page.accentColor.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
             ),
-            child: Icon(page.icon, size: 36, color: page.color),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           Text(
             page.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.15,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             page.description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: AppTheme.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               height: 1.6,
             ),
           ),
@@ -220,38 +231,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildBackupPage() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
+      padding: const EdgeInsets.fromLTRB(32, 16, 32, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppTheme.accentLight,
-              borderRadius: BorderRadius.circular(18),
+          // Illustration
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Image.asset(
+                'assets/images/onboarding_backup.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.cloud_upload_rounded,
+                    size: 56,
+                    color: AppTheme.accent.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
             ),
-            child: const Icon(Icons.cloud_upload_rounded,
-                size: 36, color: AppTheme.accent),
           ),
-          const SizedBox(height: 32),
-          const Text(
+          const SizedBox(height: 28),
+          Text(
             'Otomatik\nYedekleme',
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
+              color: onSurface,
               height: 1.15,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          const SizedBox(height: 14),
+          Text(
             'Verilerinizi Google Drive\'a otomatik olarak yedekleyin. Daha sonra ayarlardan değiştirebilirsiniz.',
             style: TextStyle(
               fontSize: 15,
-              color: AppTheme.textSecondary,
+              color: onSurface.withValues(alpha: 0.6),
               height: 1.6,
             ),
           ),
@@ -270,6 +295,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildBackupOption(
       String value, String label, IconData icon, String desc) {
     final isSelected = _backupPreference == value;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -279,11 +305,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.accentLight : AppTheme.surface,
+            color: isSelected
+                ? AppTheme.accent.withValues(alpha: 0.1)
+                : Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color:
-                  isSelected ? AppTheme.accent : AppTheme.borderSubtle,
+              color: isSelected
+                  ? AppTheme.accent
+                  : Theme.of(context).dividerTheme.color ?? AppTheme.borderSubtle,
               width: isSelected ? 1.5 : 1,
             ),
           ),
@@ -294,13 +323,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.accent.withValues(alpha: 0.15)
-                      : AppTheme.surfaceAlt,
+                      : Theme.of(context).colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon,
                     color: isSelected
                         ? AppTheme.accent
-                        : AppTheme.textSecondary,
+                        : Theme.of(context).iconTheme.color,
                     size: 20),
               ),
               const SizedBox(width: 14),
@@ -313,16 +343,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? AppTheme.textPrimary
-                            : AppTheme.textSecondary,
+                        color: isSelected ? AppTheme.accent : onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       desc,
-                      style: const TextStyle(
-                        color: AppTheme.textHint,
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                     ),
@@ -341,15 +369,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class OnboardingPage {
-  final IconData icon;
+  final String imagePath;
   final String title;
   final String description;
-  final Color color;
+  final Color accentColor;
 
-  OnboardingPage({
-    required this.icon,
+  const OnboardingPage({
+    required this.imagePath,
     required this.title,
     required this.description,
-    required this.color,
+    required this.accentColor,
   });
 }

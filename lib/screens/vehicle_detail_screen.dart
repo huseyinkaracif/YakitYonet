@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
+import '../services/widget_service.dart';
 import 'tabs/fuel_tab.dart';
 import 'tabs/maintenance_tab.dart';
 import 'tabs/insurance_tax_tab.dart';
 
 class VehicleDetailScreen extends StatefulWidget {
   final int vehicleId;
+  final bool openAddFuel;
 
-  const VehicleDetailScreen({super.key, required this.vehicleId});
+  const VehicleDetailScreen({
+    super.key, 
+    required this.vehicleId,
+    this.openAddFuel = false,
+  });
 
   @override
   State<VehicleDetailScreen> createState() => _VehicleDetailScreenState();
@@ -21,12 +27,56 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
   late TabController _tabController;
   Vehicle? _vehicle;
   bool _loading = true;
+  bool _isDefault = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadVehicle();
+    _loadDefaultStatus();
+  }
+
+  Future<void> _loadDefaultStatus() async {
+    final defaultId = await WidgetService.getDefaultVehicleId();
+    if (mounted) {
+      setState(() => _isDefault = defaultId == widget.vehicleId);
+    }
+  }
+
+  Future<void> _toggleDefault() async {
+    if (_isDefault) {
+      await WidgetService.setDefaultVehicleId(null);
+      setState(() => _isDefault = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Varsayılan araç kaldırıldı'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      await WidgetService.setDefaultVehicleId(widget.vehicleId);
+      setState(() => _isDefault = true);
+      if (_vehicle != null) {
+        final stats =
+            await DatabaseHelper.instance.getVehicleFuelStats(widget.vehicleId);
+        await WidgetService.updateWidgetData(
+          _vehicle!,
+          costPerKm: (stats['costPerKm'] as num?)?.toDouble() ?? 0.0,
+          litersPer100: (stats['litersPer100Km'] as num?)?.toDouble() ?? 0.0,
+        );
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Widget için varsayılan araç ayarlandı'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadVehicle() async {
@@ -113,6 +163,21 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ),
+                          IconButton(
+                            tooltip: _isDefault
+                                ? 'Varsayılan araç (widget)'
+                                : 'Varsayılan araç yap (widget)',
+                            icon: Icon(
+                              _isDefault
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              color: _isDefault
+                                  ? const Color(0xFFFF9800)
+                                  : AppTheme.textHint,
+                              size: 22,
+                            ),
+                            onPressed: _toggleDefault,
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded,
@@ -230,7 +295,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                                     size: 15),
                                 SizedBox(width: 5),
                                 Flexible(
-                                  child: Text('Akaryakıt',
+                                  child: Text('Yakıt',
                                       overflow: TextOverflow.ellipsis),
                                 ),
                               ],
@@ -275,6 +340,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
             children: [
               FuelTab(
                   vehicleId: widget.vehicleId,
+                  openAddDialogOnStart: widget.openAddFuel,
                   onDataChanged: _loadVehicle),
               MaintenanceTab(
                   vehicleId: widget.vehicleId,

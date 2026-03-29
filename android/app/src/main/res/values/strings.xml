@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_detailed_label">Yakıt Yönet – Detaylı</string>
+    <string name="widget_detailed_description">Araç fotoğrafı, istatistikler ve yakıt ekleme butonu (4×2)</string>
+    <string name="widget_compact_label">Yakıt Yönet – Kompakt</string>
+    <string name="widget_compact_description">Araç adı, istatistikler ve yakıt ekleme butonu (4×1)</string>
+</resources>

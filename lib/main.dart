@@ -15,6 +15,7 @@ import 'screens/report_screen.dart';
 import 'screens/trip_screen.dart';
 import 'services/google_drive_service.dart';
 import 'services/notification_service.dart';
+import 'services/widget_service.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 
@@ -26,6 +27,9 @@ void main() async {
   
   // Initialize Notification Service
   await NotificationService().init();
+
+  // Initialize Home Widget Service
+  await WidgetService.initialize();
   
   // Load environment variables
   try {
@@ -55,14 +59,25 @@ void main() async {
   } else {
     themeNotifier.value = ThemeMode.system;
   }
+  
+  // Widget üzerinden tıklandıysa URI al
+  final widgetUri = await WidgetService.getInitiallyLaunchedFromWidget();
 
-  runApp(YakitYonetApp(onboardingComplete: onboardingComplete));
+  runApp(YakitYonetApp(
+    onboardingComplete: onboardingComplete,
+    initialWidgetUri: widgetUri,
+  ));
 }
 
 class YakitYonetApp extends StatelessWidget {
   final bool onboardingComplete;
+  final Uri? initialWidgetUri;
 
-  const YakitYonetApp({super.key, required this.onboardingComplete});
+  const YakitYonetApp({
+    super.key, 
+    required this.onboardingComplete,
+    this.initialWidgetUri,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +90,7 @@ class YakitYonetApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: currentMode,
-          initialRoute: '/splash',
+          initialRoute: initialWidgetUri != null ? '/home' : '/splash',
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/splash':
@@ -96,7 +111,7 @@ class YakitYonetApp extends StatelessWidget {
                           );
                         }
                         if (snapshot.data == true) {
-                          return const VehicleListScreen();
+                          return VehicleListScreen(initialWidgetUri: initialWidgetUri);
                         }
                         return const OnboardingScreen();
                       },
@@ -104,13 +119,26 @@ class YakitYonetApp extends StatelessWidget {
                     settings,
                   );
                 }
-                return _buildRoute(const VehicleListScreen(), settings);
+                return _buildRoute(VehicleListScreen(initialWidgetUri: initialWidgetUri), settings);
               case '/add-vehicle':
                 return _buildRoute(const AddVehicleScreen(), settings);
               case '/vehicle-detail':
-                final vehicleId = settings.arguments as int;
+                final args = settings.arguments;
+                int vId;
+                bool openAddFuel = false;
+                
+                if (args is Map<String, dynamic>) {
+                  vId = args['vehicleId'] as int;
+                  openAddFuel = args['openAddFuel'] ?? false;
+                } else {
+                  vId = args as int;
+                }
+                
                 return _buildRoute(
-                    VehicleDetailScreen(vehicleId: vehicleId), settings);
+                    VehicleDetailScreen(
+                      vehicleId: vId,
+                      openAddFuel: openAddFuel,
+                    ), settings);
               case '/statistics':
                 return _buildRoute(const StatisticsScreen(), settings);
               case '/backup':

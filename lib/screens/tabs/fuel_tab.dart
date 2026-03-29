@@ -10,9 +10,10 @@ import '../../services/ocr_service.dart';
 class FuelTab extends StatefulWidget {
   final int vehicleId;
   final VoidCallback onDataChanged;
+  final bool openAddDialogOnStart;
 
   const FuelTab(
-      {super.key, required this.vehicleId, required this.onDataChanged});
+      {super.key, required this.vehicleId, required this.onDataChanged, this.openAddDialogOnStart = false});
 
   @override
   State<FuelTab> createState() => _FuelTabState();
@@ -40,6 +41,12 @@ class _FuelTabState extends State<FuelTab> {
       _stats = stats;
       _loading = false;
     });
+
+    if (widget.openAddDialogOnStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showAddFuelDialog();
+      });
+    }
   }
 
   @override
