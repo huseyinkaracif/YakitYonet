@@ -13,14 +13,14 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <!-- Vehicle thumbnail (no padding — image fills completely) -->
+        <!-- Vehicle thumbnail -->
         <ImageView
             android:id="@+id/iv_vehicle_thumb"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:contentDescription="Araç"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_car_placeholder" />
+            android:background="@drawable/widget_thumb_bg"
+            android:scaleType="centerCrop" />
 
         <!-- Name + fuel type -->
         <LinearLayout
@@ -94,8 +94,8 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginBottom="8dp"
         android:layout_marginTop="10dp"
+        android:layout_marginBottom="8dp"
         android:background="#1A000000" />
 
     <!-- Add Fuel Button -->

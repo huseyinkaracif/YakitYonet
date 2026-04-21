@@ -57,6 +57,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
             
+        <!-- Configure ML Kit Text Recognition to use unbundled models -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
+            
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>
@@ -68,20 +73,30 @@
         </receiver>
 
         <!-- Home Widget Receiver - 4x2 (detailed) -->
-        <receiver android:name=".FuelWidgetProvider" android:exported="true">
+        <receiver 
+            android:name=".FuelWidgetProvider" 
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/fuel_widget_info" />
+            <meta-data 
+                android:name="android.appwidget.provider" 
+                android:resource="@xml/fuel_widget_info" />
         </receiver>
         <!-- Home Widget Receiver - 4x1 (compact) -->
-        <receiver android:name=".FuelWidgetSmallProvider" android:exported="true">
+        <receiver 
+            android:name=".FuelWidgetSmallProvider" 
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/fuel_widget_small_info" />
+            <meta-data 
+                android:name="android.appwidget.provider" 
+                android:resource="@xml/fuel_widget_small_info" />
         </receiver>
-        <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver" android:exported="true">
+        <receiver 
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver" 
+            android:exported="true">
             <intent-filter>
                 <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
             </intent-filter>

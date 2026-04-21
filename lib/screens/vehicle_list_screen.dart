@@ -81,8 +81,14 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       Vehicle defaultVehicle;
       if (defaultId != null) {
         final found = vehicles.where((v) => v.id == defaultId).toList();
-        defaultVehicle = found.isNotEmpty ? found.first : vehicles.first;
-        if (found.isEmpty) defaultId = null;
+        if (found.isNotEmpty) {
+          defaultVehicle = found.first;
+        } else {
+          // Default vehicle was deleted — auto-select first and persist it
+          defaultVehicle = vehicles.first;
+          defaultId = vehicles.first.id;
+          await WidgetService.setDefaultVehicleId(defaultId);
+        }
       } else {
         // No explicit default → first vehicle is auto-default, persist it
         defaultVehicle = vehicles.first;
@@ -90,13 +96,13 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         await WidgetService.setDefaultVehicleId(defaultId);
       }
       final defaultStats = stats[defaultVehicle.id] ?? {};
-      WidgetService.updateWidgetData(
+      await WidgetService.updateWidgetData(
         defaultVehicle,
         costPerKm: (defaultStats['costPerKm'] as num?)?.toDouble() ?? 0.0,
         litersPer100: (defaultStats['litersPer100Km'] as num?)?.toDouble() ?? 0.0,
       );
     } else {
-      WidgetService.updateWidgetData(null);
+      await WidgetService.updateWidgetData(null);
     }
 
     setState(() {

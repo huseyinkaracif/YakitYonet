@@ -23,6 +23,7 @@ class _FuelTabState extends State<FuelTab> {
   List<FuelRecord> _records = [];
   Map<String, dynamic> _stats = {};
   bool _loading = true;
+  bool _autoDialogOpened = false;
 
   @override
   void initState() {
@@ -42,9 +43,10 @@ class _FuelTabState extends State<FuelTab> {
       _loading = false;
     });
 
-    if (widget.openAddDialogOnStart) {
+    if (widget.openAddDialogOnStart && !_autoDialogOpened) {
+      _autoDialogOpened = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showAddFuelDialog();
+        if (mounted) _showAddFuelDialog();
       });
     }
   }
@@ -973,11 +975,39 @@ class _FuelTabState extends State<FuelTab> {
     
     bool fullTank = true;
 
-    void calcTotal() {
+    void calcFromLiters(String _) {
       final liters = double.tryParse(litersController.text);
+      if (liters == null || liters <= 0) return;
       final price = double.tryParse(priceController.text);
-      if (liters != null && price != null) {
+      final total = double.tryParse(totalController.text);
+      if (price != null) {
         totalController.text = (liters * price).toStringAsFixed(2);
+      } else if (total != null) {
+        priceController.text = (total / liters).toStringAsFixed(2);
+      }
+    }
+
+    void calcFromPrice(String _) {
+      final price = double.tryParse(priceController.text);
+      if (price == null || price <= 0) return;
+      final liters = double.tryParse(litersController.text);
+      final total = double.tryParse(totalController.text);
+      if (liters != null) {
+        totalController.text = (liters * price).toStringAsFixed(2);
+      } else if (total != null) {
+        litersController.text = (total / price).toStringAsFixed(3);
+      }
+    }
+
+    void calcFromTotal(String _) {
+      final total = double.tryParse(totalController.text);
+      if (total == null || total <= 0) return;
+      final price = double.tryParse(priceController.text);
+      final liters = double.tryParse(litersController.text);
+      if (price != null) {
+        litersController.text = (total / price).toStringAsFixed(3);
+      } else if (liters != null) {
+        priceController.text = (total / liters).toStringAsFixed(2);
       }
     }
 
@@ -1066,7 +1096,7 @@ class _FuelTabState extends State<FuelTab> {
                         keyboardType: TextInputType.number,
                         style:
                             TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                        onChanged: (_) => calcTotal(),
+                        onChanged: calcFromLiters,
                         decoration: const InputDecoration(
                           labelText: 'Litre',
                           prefixIcon: Icon(Icons.water_drop_rounded,
@@ -1082,7 +1112,7 @@ class _FuelTabState extends State<FuelTab> {
                         keyboardType: TextInputType.number,
                         style:
                             TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                        onChanged: (_) => calcTotal(),
+                        onChanged: calcFromPrice,
                         decoration: const InputDecoration(
                           labelText: 'Birim Fiyat',
                           prefixIcon: Icon(Icons.monetization_on_rounded,
@@ -1098,6 +1128,7 @@ class _FuelTabState extends State<FuelTab> {
                   controller: totalController,
                   keyboardType: TextInputType.number,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  onChanged: calcFromTotal,
                   decoration: const InputDecoration(
                     labelText: 'Toplam Tutar',
                     prefixIcon: Icon(Icons.payments_rounded,

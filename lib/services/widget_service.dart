@@ -32,34 +32,38 @@ class WidgetService {
     double costPerKm = 0.0,
     double litersPer100 = 0.0,
   }) async {
-    if (vehicle != null) {
-      await HomeWidget.saveWidgetData<String>('vehicle_name', vehicle.name);
-      await HomeWidget.saveWidgetData<String>(
-          'vehicle_km', '${vehicle.currentKm.toStringAsFixed(0)} km');
-      await HomeWidget.saveWidgetData<String>(
-          'vehicle_image_path', vehicle.imagePath ?? '');
-      await HomeWidget.saveWidgetData<String>('fuel_type', vehicle.fuelType);
-      await HomeWidget.saveWidgetData<String>('cost_per_km',
-          costPerKm > 0 ? '${costPerKm.toStringAsFixed(2)} ₺/km' : '—');
-      await HomeWidget.saveWidgetData<String>('liters_per_100',
-          litersPer100 > 0 ? '${litersPer100.toStringAsFixed(1)} L/100' : '—');
-    } else {
-      await HomeWidget.saveWidgetData<String>('vehicle_name', 'Araç Seçilmedi');
-      await HomeWidget.saveWidgetData<String>('vehicle_km', '');
-      await HomeWidget.saveWidgetData<String>('vehicle_image_path', '');
-      await HomeWidget.saveWidgetData<String>('fuel_type', '');
-      await HomeWidget.saveWidgetData<String>('cost_per_km', '—');
-      await HomeWidget.saveWidgetData<String>('liters_per_100', '—');
-    }
+    try {
+      if (vehicle != null) {
+        await HomeWidget.saveWidgetData<String>('vehicle_name', vehicle.name);
+        await HomeWidget.saveWidgetData<String>(
+            'vehicle_km', '${vehicle.currentKm.toStringAsFixed(0)} km');
+        await HomeWidget.saveWidgetData<String>(
+            'vehicle_image_path', vehicle.imagePath ?? '');
+        await HomeWidget.saveWidgetData<String>('fuel_type', vehicle.fuelType);
+        await HomeWidget.saveWidgetData<String>('cost_per_km',
+            costPerKm > 0 ? '${costPerKm.toStringAsFixed(2)} ₺/km' : '—');
+        await HomeWidget.saveWidgetData<String>('liters_per_100',
+            litersPer100 > 0 ? '${litersPer100.toStringAsFixed(1)} L/100' : '—');
+      } else {
+        await HomeWidget.saveWidgetData<String>('vehicle_name', 'Araç Seçilmedi');
+        await HomeWidget.saveWidgetData<String>('vehicle_km', '');
+        await HomeWidget.saveWidgetData<String>('vehicle_image_path', '');
+        await HomeWidget.saveWidgetData<String>('fuel_type', '');
+        await HomeWidget.saveWidgetData<String>('cost_per_km', '—');
+        await HomeWidget.saveWidgetData<String>('liters_per_100', '—');
+      }
 
-    await HomeWidget.updateWidget(
-      name: androidWidgetName,
-      androidName: androidWidgetName,
-    );
-    await HomeWidget.updateWidget(
-      name: androidSmallWidgetName,
-      androidName: androidSmallWidgetName,
-    );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: 'com.yakityonet.yakit_yonet.$androidWidgetName',
+      );
+      await HomeWidget.updateWidget(
+        qualifiedAndroidName: 'com.yakityonet.yakit_yonet.$androidSmallWidgetName',
+      );
+    } catch (e) {
+      // Widget güncelleme başarısız olsa bile uygulamanın çökmemesi için
+      // hatayı yakalıyoruz. Widget henüz ekranda olmayabilir.
+      print('Widget güncelleme hatası (normal olabilir): $e');
+    }
   }
 
   static Future<Uri?> getInitiallyLaunchedFromWidget() async {

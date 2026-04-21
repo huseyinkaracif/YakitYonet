@@ -12,6 +12,8 @@ import java.io.File
 
 object WidgetHelper {
 
+    private const val TAG = "WidgetHelper"
+
     data class WidgetData(
         val vehicleName: String,
         val fuelType: String,
@@ -21,14 +23,36 @@ object WidgetHelper {
         val imagePath: String,
     )
 
-    fun readData(prefs: SharedPreferences): WidgetData = WidgetData(
-        vehicleName = prefs.getString("vehicle_name", "Araç Seçilmedi") ?: "Araç Seçilmedi",
-        fuelType = prefs.getString("fuel_type", "") ?: "",
-        costPerKm = prefs.getString("cost_per_km", "—") ?: "—",
-        litersPer100 = prefs.getString("liters_per_100", "—") ?: "—",
-        totalKm = prefs.getString("vehicle_km", "—") ?: "—",
-        imagePath = prefs.getString("vehicle_image_path", "") ?: "",
-    )
+    fun readData(prefs: SharedPreferences): WidgetData {
+        android.util.Log.d(TAG, "Reading widget data from SharedPreferences")
+        android.util.Log.d(TAG, "All preferences keys: ${prefs.all.keys}")
+        
+        val data = WidgetData(
+            vehicleName = prefs.getString("vehicle_name", "Araç Seçilmedi") ?: "Araç Seçilmedi",
+            fuelType = prefs.getString("fuel_type", "") ?: "",
+            costPerKm = prefs.getString("cost_per_km", "—") ?: "—",
+            litersPer100 = prefs.getString("liters_per_100", "—") ?: "—",
+            totalKm = prefs.getString("vehicle_km", "—") ?: "—",
+            imagePath = prefs.getString("vehicle_image_path", "") ?: "",
+        )
+        
+        android.util.Log.d(TAG, "Read data: $data")
+        return data
+    }
+
+    /**
+     * Creates a plain rounded placeholder bitmap (gray fill).
+     * Used instead of setImageViewResource() which doesn't support vectors in RemoteViews on API < 31.
+     */
+    fun createPlaceholderBitmap(sizePx: Int, radiusPx: Int): Bitmap {
+        val out = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#F5F5F4")
+        }
+        canvas.drawRoundRect(RectF(0f, 0f, sizePx.toFloat(), sizePx.toFloat()), radiusPx.toFloat(), radiusPx.toFloat(), paint)
+        return out
+    }
 
     /**
      * Loads, scales and rounds the vehicle photo.
