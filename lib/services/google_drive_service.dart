@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path/path.dart' as p;
 import '../database/database_helper.dart';
 
@@ -45,7 +44,13 @@ class GoogleDriveService {
     if (_user == null) {
       if (!await signIn()) return null;
     }
-    
+
+    final granted = await _googleSignIn.requestScopes([drive.DriveApi.driveAppdataScope]);
+    if (!granted) return null;
+
+    _user = await _googleSignIn.signInSilently();
+    if (_user == null) return null;
+
     final headers = await _user!.authHeaders;
     final client = _GoogleAuthClient(headers);
     return drive.DriveApi(client);
@@ -66,26 +71,29 @@ class GoogleDriveService {
       final existingFiles = await driveApi.files.list(
         spaces: 'appDataFolder',
         q: "name = 'yakit_yonet_backup.db'",
+        $fields: 'files(id)',
       );
 
-      final media = drive.Media(file.openRead(), file.lengthSync());
+      drive.Media buildMedia() => drive.Media(
+            file.openRead(),
+            file.lengthSync(),
+            contentType: 'application/octet-stream',
+          );
 
       if (existingFiles.files != null && existingFiles.files!.isNotEmpty) {
-        // Update existing
         final fileId = existingFiles.files!.first.id!;
-        final updateFile = drive.File(); // Sadece güncellenecek, ismi aynı kalır
-        await driveApi.files.update(updateFile, fileId, uploadMedia: media);
+        await driveApi.files.update(drive.File(), fileId, uploadMedia: buildMedia());
       } else {
-        // Create new
         final createFile = drive.File()
           ..name = 'yakit_yonet_backup.db'
-          ..parents = ['appDataFolder'];
-        await driveApi.files.create(createFile, uploadMedia: media);
+          ..parents = ['appDataFolder']
+          ..mimeType = 'application/octet-stream';
+        await driveApi.files.create(createFile, uploadMedia: buildMedia());
       }
 
       return true;
-    } catch (e) {
-      print('Backup error: $e');
+    } catch (e, st) {
+      print('Backup error: $e\n$st');
       return false;
     }
   }
@@ -109,19 +117,22 @@ class GoogleDriveService {
       final response = await driveApi.files.get(
         fileId,
         downloadOptions: drive.DownloadOptions.fullMedia,
-      ) as http.Response;
+      ) as drive.Media;
 
       final dbPath = await DatabaseHelper.instance.getDatabasePath();
       final oldDbFile = File(dbPath);
-      
+
       final dir = Directory(p.dirname(dbPath));
       if (!await dir.exists()) await dir.create(recursive: true);
 
-      // We need to close the current database before overwriting
       await DatabaseHelper.instance.close();
 
       final tempFile = File('$dbPath.tmp');
-      await tempFile.writeAsBytes(response.bodyBytes);
+      final List<int> bytes = [];
+      await for (final chunk in response.stream) {
+        bytes.addAll(chunk);
+      }
+      await tempFile.writeAsBytes(bytes);
 
       // Replace old DB
       if (await oldDbFile.exists()) await oldDbFile.delete();

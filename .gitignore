@@ -49,6 +49,9 @@ app.*.map.json
 .env*
 *.env
 
+# Google Services (contains OAuth credentials)
+google-services.json
+
 gelecek_ozellikler.md
 .impeccable.md
 gelecek_ozellikler.md
