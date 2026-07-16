@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,13 +40,10 @@ void main() async {
   }
 
   await GoogleDriveService.instance.init();
-  
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.white,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
+
+  unawaited(_rescheduleNotifications());
+  unawaited(_autoBackupCatchUp());
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   final prefs = await SharedPreferences.getInstance();
@@ -67,6 +65,36 @@ void main() async {
     onboardingComplete: onboardingComplete,
     initialWidgetUri: widgetUri,
   ));
+}
+
+Future<void> _rescheduleNotifications() async {
+  try {
+    await NotificationService().rescheduleAllFromDb();
+  } catch (e) {
+    debugPrint('Bildirim hatırlatıcıları yeniden planlanamadı: $e');
+  }
+}
+
+Future<void> _autoBackupCatchUp() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final backupPref = prefs.getString('backup_preference') ?? 'off';
+    if (backupPref != 'weekly' && backupPref != 'monthly') return;
+    if (GoogleDriveService.instance.currentUser == null) return;
+
+    final lastBackupRaw = prefs.getString('last_backup_at');
+    final lastBackup =
+        lastBackupRaw != null ? DateTime.tryParse(lastBackupRaw) : null;
+    final period = Duration(days: backupPref == 'weekly' ? 7 : 30);
+    if (lastBackup != null &&
+        DateTime.now().difference(lastBackup) < period) {
+      return;
+    }
+
+    await GoogleDriveService.instance.backupToDrive();
+  } catch (e) {
+    debugPrint('Otomatik yedekleme kontrolü başarısız: $e');
+  }
 }
 
 class YakitYonetApp extends StatelessWidget {

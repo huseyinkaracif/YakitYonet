@@ -1,14 +1,66 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/vehicle.dart';
 import '../models/fuel_record.dart';
 import '../models/maintenance_record.dart';
 import '../models/insurance_tax_record.dart';
+import '../utils/fuel_math.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+
+  static const int _exportVersion = 1;
+
+  static const Map<String, List<String>> _importColumns = {
+    'vehicles': [
+      'id',
+      'name',
+      'currentKm',
+      'initialKm',
+      'fuelType',
+      'tankCapacity',
+      'imagePath',
+      'createdAt',
+    ],
+    'fuel_records': [
+      'id',
+      'vehicleId',
+      'date',
+      'km',
+      'liters',
+      'pricePerLiter',
+      'totalCost',
+      'fullTank',
+      'note',
+    ],
+    'maintenance_records': [
+      'id',
+      'vehicleId',
+      'date',
+      'km',
+      'title',
+      'description',
+      'cost',
+      'category',
+      'note',
+    ],
+    'insurance_tax_records': [
+      'id',
+      'vehicleId',
+      'date',
+      'type',
+      'provider',
+      'cost',
+      'expiryDate',
+      'policyNumber',
+      'note',
+    ],
+  };
 
   DatabaseHelper._init();
 
@@ -21,7 +73,13 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 1,
+      onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
   }
 
   Future _createDB(Database db, int version) async {
@@ -30,6 +88,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         currentKm REAL NOT NULL,
+        initialKm REAL,
         fuelType TEXT NOT NULL,
         tankCapacity REAL NOT NULL,
         imagePath TEXT,
@@ -81,13 +140,32 @@ class DatabaseHelper {
         FOREIGN KEY (vehicleId) REFERENCES vehicles(id) ON DELETE CASCADE
       )
     ''');
+
+    await db.execute(
+        'CREATE INDEX idx_fuel_records_vehicleId ON fuel_records(vehicleId)');
+    await db.execute(
+        'CREATE INDEX idx_maintenance_records_vehicleId ON maintenance_records(vehicleId)');
+    await db.execute(
+        'CREATE INDEX idx_insurance_tax_records_vehicleId ON insurance_tax_records(vehicleId)');
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    for (var v = oldVersion + 1; v <= newVersion; v++) {
+      switch (v) {
+        // Gelecek şema sürümleri buraya eklenecek (case 2: ...)
+        default:
+          break;
+      }
+    }
   }
 
   // ==================== VEHICLE CRUD ====================
 
   Future<int> insertVehicle(Vehicle vehicle) async {
     final db = await database;
-    return await db.insert('vehicles', vehicle.toMap());
+    final map = vehicle.toMap();
+    map['initialKm'] = vehicle.currentKm;
+    return await db.insert('vehicles', map);
   }
 
   Future<List<Vehicle>> getAllVehicles() async {
@@ -111,50 +189,90 @@ class DatabaseHelper {
 
   Future<int> deleteVehicle(int id) async {
     final db = await database;
-    return await db.delete('vehicles', where: 'id = ?', whereArgs: [id]);
+    final vehicle = await getVehicle(id);
+
+    final count = await db.transaction((txn) async {
+      await txn
+          .delete('fuel_records', where: 'vehicleId = ?', whereArgs: [id]);
+      await txn.delete('maintenance_records',
+          where: 'vehicleId = ?', whereArgs: [id]);
+      await txn.delete('insurance_tax_records',
+          where: 'vehicleId = ?', whereArgs: [id]);
+      return await txn.delete('vehicles', where: 'id = ?', whereArgs: [id]);
+    });
+
+    final imagePath = vehicle?.imagePath;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      try {
+        final file = File(imagePath);
+        if (await file.exists()) await file.delete();
+      } catch (_) {
+        // Görsel silinemese de araç silme işlemi başarılı sayılır
+      }
+    }
+
+    return count;
   }
 
   // ==================== FUEL RECORD CRUD ====================
 
   Future<int> insertFuelRecord(FuelRecord record) async {
     final db = await database;
-    final id = await db.insert('fuel_records', record.toMap());
-    // Update vehicle km
-    await db.rawUpdate(
-      'UPDATE vehicles SET currentKm = ? WHERE id = ? AND currentKm < ?',
-      [record.km, record.vehicleId, record.km],
-    );
-    return id;
+    return await db.transaction((txn) async {
+      final id = await txn.insert('fuel_records', record.toMap());
+      await txn.rawUpdate(
+        'UPDATE vehicles SET currentKm = ? WHERE id = ? AND currentKm < ?',
+        [record.km, record.vehicleId, record.km],
+      );
+      return id;
+    });
   }
 
   Future<List<FuelRecord>> getFuelRecords(int vehicleId) async {
     final db = await database;
     final maps = await db.query('fuel_records',
-        where: 'vehicleId = ?', whereArgs: [vehicleId], orderBy: 'date ASC');
+        where: 'vehicleId = ?',
+        whereArgs: [vehicleId],
+        orderBy: 'date ASC, km ASC, id ASC');
     return maps.map((map) => FuelRecord.fromMap(map)).toList();
   }
 
   Future<int> updateFuelRecord(FuelRecord record) async {
     final db = await database;
-    return await db.update('fuel_records', record.toMap(),
-        where: 'id = ?', whereArgs: [record.id]);
+    return await db.transaction((txn) async {
+      final count = await txn.update('fuel_records', record.toMap(),
+          where: 'id = ?', whereArgs: [record.id]);
+      await _recalcCurrentKm(txn, record.vehicleId);
+      return count;
+    });
   }
 
   Future<int> deleteFuelRecord(int id) async {
     final db = await database;
-    return await db.delete('fuel_records', where: 'id = ?', whereArgs: [id]);
+    return await db.transaction((txn) async {
+      final rows = await txn.query('fuel_records',
+          columns: ['vehicleId'], where: 'id = ?', whereArgs: [id]);
+      final count =
+          await txn.delete('fuel_records', where: 'id = ?', whereArgs: [id]);
+      if (rows.isNotEmpty) {
+        await _recalcCurrentKm(txn, rows.first['vehicleId'] as int);
+      }
+      return count;
+    });
   }
 
   // ==================== MAINTENANCE RECORD CRUD ====================
 
   Future<int> insertMaintenanceRecord(MaintenanceRecord record) async {
     final db = await database;
-    final id = await db.insert('maintenance_records', record.toMap());
-    await db.rawUpdate(
-      'UPDATE vehicles SET currentKm = ? WHERE id = ? AND currentKm < ?',
-      [record.km, record.vehicleId, record.km],
-    );
-    return id;
+    return await db.transaction((txn) async {
+      final id = await txn.insert('maintenance_records', record.toMap());
+      await txn.rawUpdate(
+        'UPDATE vehicles SET currentKm = ? WHERE id = ? AND currentKm < ?',
+        [record.km, record.vehicleId, record.km],
+      );
+      return id;
+    });
   }
 
   Future<List<MaintenanceRecord>> getMaintenanceRecords(int vehicleId) async {
@@ -166,14 +284,52 @@ class DatabaseHelper {
 
   Future<int> updateMaintenanceRecord(MaintenanceRecord record) async {
     final db = await database;
-    return await db.update('maintenance_records', record.toMap(),
-        where: 'id = ?', whereArgs: [record.id]);
+    return await db.transaction((txn) async {
+      final count = await txn.update('maintenance_records', record.toMap(),
+          where: 'id = ?', whereArgs: [record.id]);
+      await _recalcCurrentKm(txn, record.vehicleId);
+      return count;
+    });
   }
 
   Future<int> deleteMaintenanceRecord(int id) async {
     final db = await database;
-    return await db.delete('maintenance_records',
-        where: 'id = ?', whereArgs: [id]);
+    return await db.transaction((txn) async {
+      final rows = await txn.query('maintenance_records',
+          columns: ['vehicleId'], where: 'id = ?', whereArgs: [id]);
+      final count = await txn.delete('maintenance_records',
+          where: 'id = ?', whereArgs: [id]);
+      if (rows.isNotEmpty) {
+        await _recalcCurrentKm(txn, rows.first['vehicleId'] as int);
+      }
+      return count;
+    });
+  }
+
+  /// currentKm'yi yakıt + bakım kayıtlarının MAX(km) değerinden yeniden
+  /// hesaplar; kayıt yoksa araç oluşturulurken girilen initialKm'ye döner.
+  Future<void> _recalcCurrentKm(DatabaseExecutor txn, int vehicleId) async {
+    final vehicleRows = await txn.query('vehicles',
+        columns: ['currentKm', 'initialKm'],
+        where: 'id = ?',
+        whereArgs: [vehicleId]);
+    if (vehicleRows.isEmpty) return;
+
+    final initialKm = (vehicleRows.first['initialKm'] as num?)?.toDouble() ??
+        (vehicleRows.first['currentKm'] as num).toDouble();
+
+    final result = await txn.rawQuery('''
+      SELECT MAX(km) AS maxKm FROM (
+        SELECT km FROM fuel_records WHERE vehicleId = ?
+        UNION ALL
+        SELECT km FROM maintenance_records WHERE vehicleId = ?
+      )
+    ''', [vehicleId, vehicleId]);
+    final maxKm = (result.first['maxKm'] as num?)?.toDouble();
+
+    final newKm = (maxKm != null && maxKm > initialKm) ? maxKm : initialKm;
+    await txn.update('vehicles', {'currentKm': newKm},
+        where: 'id = ?', whereArgs: [vehicleId]);
   }
 
   // ==================== INSURANCE/TAX RECORD CRUD ====================
@@ -207,58 +363,15 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> getVehicleFuelStats(int vehicleId) async {
     final records = await getFuelRecords(vehicleId);
-    if (records.isEmpty) {
-      return {
-        'firstDate': null,
-        'totalCost': 0.0,
-        'totalLiters': 0.0,
-        'avgPrice': 0.0,
-        'count': 0,
-        'costPerKm': 0.0,
-        'litersPer100Km': 0.0,
-      };
-    }
-
-    // Son kaydı toplam maliyet ve miktara DAHİL ETME
-    final recordsExcludingLast =
-        records.length > 1 ? records.sublist(0, records.length - 1) : <FuelRecord>[];
-
-    double totalCost = 0;
-    double totalLiters = 0;
-    double totalPriceSum = 0;
-
-    for (var r in recordsExcludingLast) {
-      totalCost += r.totalCost;
-      totalLiters += r.liters;
-      totalPriceSum += r.pricePerLiter;
-    }
-
-    double avgPrice = records.isNotEmpty
-        ? records.map((r) => r.pricePerLiter).reduce((a, b) => a + b) /
-            records.length
-        : 0;
-
-    // Consumption calculations
-    double totalKmDriven = 0;
-    double totalLitersConsumed = 0;
-    for (int i = 1; i < records.length; i++) {
-      totalKmDriven += records[i].km - records[i - 1].km;
-      totalLitersConsumed += records[i].liters;
-    }
-
-    double costPerKm =
-        totalKmDriven > 0 ? totalCost / totalKmDriven : 0;
-    double litersPer100Km =
-        totalKmDriven > 0 ? (totalLitersConsumed / totalKmDriven) * 100 : 0;
-
+    final stats = computeFuelStats(records);
     return {
-      'firstDate': records.first.date,
-      'totalCost': totalCost,
-      'totalLiters': totalLiters,
-      'avgPrice': avgPrice,
-      'count': records.length,
-      'costPerKm': costPerKm,
-      'litersPer100Km': litersPer100Km,
+      'firstDate': stats.firstDate,
+      'totalCost': stats.totalCost,
+      'totalLiters': stats.totalLiters,
+      'avgPrice': stats.avgPricePerLiter,
+      'count': stats.recordCount,
+      'costPerKm': stats.costPerKm,
+      'litersPer100Km': stats.litersPer100km,
     };
   }
 
@@ -295,31 +408,49 @@ class DatabaseHelper {
       'maintenance_records': maintenanceRecords,
       'insurance_tax_records': insuranceTaxRecords,
       'exportDate': DateTime.now().toIso8601String(),
-      'version': 1,
+      'version': _exportVersion,
     };
   }
 
   Future<void> importAllData(Map<String, dynamic> data) async {
+    final version = data['version'];
+    if (version != _exportVersion) {
+      throw FormatException(
+          'Desteklenmeyen yedek dosyası sürümü ($version). '
+          'Lütfen uygulamanın güncel sürümüyle alınmış bir yedek kullanın.');
+    }
+    for (final table in _importColumns.keys) {
+      if (data[table] is! List) {
+        throw FormatException('Geçersiz yedek dosyası: "$table" verisi eksik.');
+      }
+    }
+
+    // İçe aktarma öncesi mevcut verinin güvenlik yedeği
+    try {
+      final current = await exportAllData();
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp =
+          DateTime.now().toIso8601String().replaceAll(':', '-');
+      final file =
+          File(join(dir.path, 'yedek_oncesi_import_$timestamp.json'));
+      await file.writeAsString(jsonEncode(current));
+    } catch (_) {
+      // Güvenlik yedeği alınamasa da içe aktarma devam eder
+    }
+
     final db = await database;
     await db.transaction((txn) async {
-      // Clear existing data
       await txn.delete('insurance_tax_records');
       await txn.delete('maintenance_records');
       await txn.delete('fuel_records');
       await txn.delete('vehicles');
 
-      // Import vehicles
-      for (var v in (data['vehicles'] as List)) {
-        await txn.insert('vehicles', Map<String, dynamic>.from(v));
-      }
-      for (var r in (data['fuel_records'] as List)) {
-        await txn.insert('fuel_records', Map<String, dynamic>.from(r));
-      }
-      for (var r in (data['maintenance_records'] as List)) {
-        await txn.insert('maintenance_records', Map<String, dynamic>.from(r));
-      }
-      for (var r in (data['insurance_tax_records'] as List)) {
-        await txn.insert('insurance_tax_records', Map<String, dynamic>.from(r));
+      for (final entry in _importColumns.entries) {
+        for (final row in (data[entry.key] as List)) {
+          final map = Map<String, dynamic>.from(row as Map);
+          map.removeWhere((key, _) => !entry.value.contains(key));
+          await txn.insert(entry.key, map);
+        }
       }
     });
   }
@@ -329,9 +460,16 @@ class DatabaseHelper {
     return join(dbPath, 'yakit_yonet.db');
   }
 
-  Future<void> close() async {
+  Future<void> checkpointWal() async {
     final db = await database;
-    db.close();
-    _database = null;
+    await db.rawQuery('PRAGMA wal_checkpoint(TRUNCATE)');
+  }
+
+  Future<void> close() async {
+    final db = _database;
+    if (db != null) {
+      await db.close();
+      _database = null;
+    }
   }
 }
