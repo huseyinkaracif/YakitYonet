@@ -4,7 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:excel/excel.dart';
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
@@ -85,9 +84,13 @@ class ReportService {
     _buildSummarySheet(excel, data);
 
     for (final rd in data) {
-      // Limit prefix to avoid long sheet names (max 31 chars)
-      final raw = rd.vehicle.name.replaceAll(RegExp(r'[/\\*\[\]:\?]'), '');
-      final prefix = raw.length > 14 ? raw.substring(0, 14) : raw;
+      // Limit prefix to avoid long sheet names (max 31 chars);
+      // araç id'si aynı isimli araçlarda sayfa adı çakışmasını önler
+      final raw =
+          rd.vehicle.name.replaceAll(RegExp(r'[/\\*\[\]:\?]'), '').trim();
+      final base = raw.length > 14 ? raw.substring(0, 14) : raw;
+      final prefix =
+          base.isEmpty ? 'Arac${rd.vehicle.id}' : '${base}_${rd.vehicle.id}';
 
       if (includeFuel) _buildFuelSheet(excel, rd, prefix);
       if (includeMaint) _buildMaintenanceSheet(excel, rd, prefix);
@@ -221,21 +224,18 @@ class ReportService {
     bool includeMaint = true,
     bool includeIns = true,
   }) async {
-    pw.Font fontRegular;
-    pw.Font fontBold;
     pw.MemoryImage? appLogo;
 
     try {
       final logoBytes = await rootBundle.load('assets/images/app_icon.png');
       appLogo = pw.MemoryImage(logoBytes.buffer.asUint8List());
     } catch (_) {}
-    try {
-      fontRegular = await PdfGoogleFonts.notoSansRegular();
-      fontBold = await PdfGoogleFonts.notoSansBold();
-    } catch (_) {
-      fontRegular = pw.Font.helvetica();
-      fontBold = pw.Font.helveticaBold();
-    }
+
+    // Türkçe karakter desteği için paketlenmiş fontlar (çevrimdışı çalışır)
+    final fontRegular =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'));
+    final fontBold =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'));
 
     final theme = pw.ThemeData.withFont(base: fontRegular, bold: fontBold);
     final pdf = pw.Document(title: 'Yakit Yonet Raporu', theme: theme);

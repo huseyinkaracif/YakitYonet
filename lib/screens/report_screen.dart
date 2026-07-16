@@ -43,6 +43,7 @@ class _ReportScreenState extends State<ReportScreen>
 
   Future<void> _loadVehicles() async {
     final v = await DatabaseHelper.instance.getAllVehicles();
+    if (!mounted) return;
     setState(() {
       _vehicles = v;
       _sel.addAll(v.where((x) => x.id != null).map((x) => x.id!));

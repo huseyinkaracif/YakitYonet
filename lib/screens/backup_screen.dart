@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../services/google_drive_service.dart';
@@ -14,6 +15,7 @@ class _BackupScreenState extends State<BackupScreen> {
   String _backupPref = 'off';
   bool _loading = true;
   bool _syncing = false;
+  DateTime? _lastBackupAt;
 
   @override
   void initState() {
@@ -23,8 +25,12 @@ class _BackupScreenState extends State<BackupScreen> {
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final lastBackupRaw = prefs.getString('last_backup_at');
     setState(() {
       _backupPref = prefs.getString('backup_preference') ?? 'off';
+      _lastBackupAt =
+          lastBackupRaw != null ? DateTime.tryParse(lastBackupRaw) : null;
       _loading = false;
     });
   }
@@ -32,35 +38,77 @@ class _BackupScreenState extends State<BackupScreen> {
   Future<void> _savePrefs(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('backup_preference', value);
+    if (!mounted) return;
     setState(() => _backupPref = value);
     if (value != 'off') _handleBackup();
   }
 
-  Future<void> _handleBackup() async {
+  Future<void> _refreshLastBackup() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final lastBackupRaw = prefs.getString('last_backup_at');
+    setState(() {
+      _lastBackupAt =
+          lastBackupRaw != null ? DateTime.tryParse(lastBackupRaw) : null;
+    });
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMMM yyyy HH:mm', 'tr_TR').format(date.toLocal());
+  }
+
+  Future<void> _handleSignIn() async {
     setState(() => _syncing = true);
-    final success = await GoogleDriveService.instance.backupToDrive();
+    final success = await GoogleDriveService.instance.signIn();
+    if (!mounted) return;
     setState(() => _syncing = false);
 
-    if (mounted) {
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success
-              ? 'Yedekleme başarıyla tamamlandı!'
-              : 'Yedekleme başarısız. Google hesabınızı kontrol edin.'),
-          backgroundColor:
-              success ? AppTheme.successColor : AppTheme.dangerColor,
+        const SnackBar(
+          content:
+              Text('Google ile giriş yapılamadı. Lütfen tekrar deneyin.'),
+          backgroundColor: AppTheme.dangerColor,
         ),
       );
     }
   }
 
+  Future<void> _handleBackup() async {
+    setState(() => _syncing = true);
+    final success = await GoogleDriveService.instance.backupToDrive();
+    if (!mounted) return;
+    setState(() => _syncing = false);
+
+    if (success) await _refreshLastBackup();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Yedekleme başarıyla tamamlandı!'
+            : 'Yedekleme başarısız. Google hesabınızı kontrol edin.'),
+        backgroundColor:
+            success ? AppTheme.successColor : AppTheme.dangerColor,
+      ),
+    );
+  }
+
   Future<void> _handleRestore() async {
+    setState(() => _syncing = true);
+    final backupDate =
+        await GoogleDriveService.instance.getBackupModifiedTime();
+    if (!mounted) return;
+    setState(() => _syncing = false);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Geri Yükle'),
-        content: const Text(
-          'Buluttaki verileriniz mevcut yerel verilerinizin üzerine yazılacaktır. Devam etmek istiyor musunuz?',
+        content: Text(
+          backupDate != null
+              ? 'Buluttaki yedek (${_formatDate(backupDate)}) mevcut yerel verilerinizin üzerine yazılacaktır. Devam etmek istiyor musunuz?'
+              : 'Buluttaki verileriniz mevcut yerel verilerinizin üzerine yazılacaktır. Devam etmek istiyor musunuz?',
         ),
         actions: [
           TextButton(
@@ -75,26 +123,31 @@ class _BackupScreenState extends State<BackupScreen> {
       ),
     );
 
-    if (confirm != true) return;
+    if (confirm != true || !mounted) return;
 
     setState(() => _syncing = true);
-    final success = await GoogleDriveService.instance.restoreFromDrive();
+    bool success;
+    try {
+      success = await GoogleDriveService.instance.restoreFromDrive();
+    } catch (e) {
+      debugPrint('Restore error: $e');
+      success = false;
+    }
+    if (!mounted) return;
     setState(() => _syncing = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success
-              ? 'Veriler başarıyla geri yüklendi!'
-              : 'Geri yükleme başarısız veya yedek bulunamadı.'),
-          backgroundColor:
-              success ? AppTheme.successColor : AppTheme.dangerColor,
-        ),
-      );
-      if (success) {
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil('/splash', (route) => false);
-      }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Veriler başarıyla geri yüklendi!'
+            : 'Geri yükleme başarısız veya yedek bulunamadı.'),
+        backgroundColor:
+            success ? AppTheme.successColor : AppTheme.dangerColor,
+      ),
+    );
+    if (success) {
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil('/splash', (route) => false);
     }
   }
 
@@ -216,15 +269,8 @@ class _BackupScreenState extends State<BackupScreen> {
                                 SizedBox(
                                   height: 52,
                                   child: ElevatedButton.icon(
-                                    onPressed: _syncing
-                                        ? null
-                                        : () async {
-                                            setState(() => _syncing = true);
-                                            await GoogleDriveService.instance
-                                                .signIn();
-                                            setState(
-                                                () => _syncing = false);
-                                          },
+                                    onPressed:
+                                        _syncing ? null : _handleSignIn,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppTheme.surfaceFor(context),
                                       foregroundColor:
@@ -243,14 +289,8 @@ class _BackupScreenState extends State<BackupScreen> {
                                               color: AppTheme.accent,
                                             ),
                                           )
-                                        : Image.network(
-                                            'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-                                            height: 22,
-                                            errorBuilder: (_, __, ___) =>
-                                                const Icon(
-                                                    Icons.login_rounded,
-                                                    size: 22),
-                                          ),
+                                        : const Icon(Icons.login_rounded,
+                                            size: 22),
                                     label: const Text(
                                       'Google ile Bağlan',
                                       style: TextStyle(
@@ -330,6 +370,16 @@ class _BackupScreenState extends State<BackupScreen> {
                                         ? 'Eşitleniyor...'
                                         : 'Şimdi Yedekle'),
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _lastBackupAt != null
+                                      ? 'Son yedekleme: ${_formatDate(_lastBackupAt!)}'
+                                      : 'Henüz yedekleme yapılmadı',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: AppTheme.textHintFor(context),
+                                      fontSize: 12),
                                 ),
                                 const SizedBox(height: 10),
 

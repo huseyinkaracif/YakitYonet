@@ -19,13 +19,15 @@ class OcrResult {
 }
 
 class OcrService {
-  final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  final TextRecognizer _textRecognizer = TextRecognizer(
+    script: TextRecognitionScript.latin,
+  );
 
   Future<OcrResult> processImage(String imagePath) async {
     try {
       final inputImage = InputImage.fromFilePath(imagePath);
       final recognizedText = await _textRecognizer.processImage(inputImage);
-      
+
       return _parseReceiptData(recognizedText.text);
     } catch (e) {
       return OcrResult(
@@ -54,10 +56,7 @@ class OcrService {
     );
 
     // Standalone liters fallback: "50,630 LT" or "MİKTAR: 50,630"
-    final ltOnlyRegex = RegExp(
-      r'([\d.,]+)\s*LT\b',
-      caseSensitive: false,
-    );
+    final ltOnlyRegex = RegExp(r'([\d.,]+)\s*LT\b', caseSensitive: false);
     final miktarRegex = RegExp(
       r'(?:M[İI]KTAR|L[İI]TRE|HACM[İI])[:\s]*([\d.,]+)',
       caseSensitive: false,
@@ -82,7 +81,12 @@ class OcrService {
             final day = int.parse(m.group(1)!);
             final month = int.parse(m.group(2)!);
             final year = int.parse(m.group(3)!);
-            if (year > 2000 && year <= DateTime.now().year) {
+            if (year > 2000 &&
+                year <= DateTime.now().year &&
+                month >= 1 &&
+                month <= 12 &&
+                day >= 1 &&
+                day <= 31) {
               date = DateTime(year, month, day);
             }
           } catch (_) {}
@@ -116,19 +120,22 @@ class OcrService {
         final t = _parseDouble(totalMatch.group(1)!);
         if (t != null && t > 0) {
           // Keep the larger value (TOPLAM may appear twice; pick biggest)
-          if (totalCost == null || t >= totalCost!) totalCost = t;
+          if (totalCost == null || t >= totalCost) totalCost = t;
         }
       }
     }
 
     // 5. Derive totalCost from liters × pricePerLiter if still missing
     if (totalCost == null && liters != null && pricePerLiter != null) {
-      totalCost = _roundTo2(liters! * pricePerLiter!);
+      totalCost = _roundTo2(liters * pricePerLiter);
     }
 
     // 6. Derive pricePerLiter if missing
-    if (pricePerLiter == null && liters != null && totalCost != null && liters! > 0) {
-      pricePerLiter = _roundTo2(totalCost! / liters!);
+    if (pricePerLiter == null &&
+        liters != null &&
+        totalCost != null &&
+        liters > 0) {
+      pricePerLiter = _roundTo2(totalCost / liters);
     }
 
     // 7. Sanity cross-check
@@ -136,10 +143,11 @@ class OcrService {
     String? error;
 
     if (liters != null && totalCost != null) {
-      final ppl = pricePerLiter ?? (totalCost! / liters!);
+      final ppl = pricePerLiter ?? (totalCost / liters);
       if (ppl < 10 || ppl > 300) {
         isAccurate = false;
-        error = 'Okunan tutar ve litre değerleri tutarsız görünüyor. Lütfen kontrol edin.';
+        error =
+            'Okunan tutar ve litre değerleri tutarsız görünüyor. Lütfen kontrol edin.';
       }
     } else {
       isAccurate = false;

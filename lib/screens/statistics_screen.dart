@@ -42,6 +42,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       }
     }
 
+    if (!mounted) return;
     setState(() {
       _vehicles = vehicles;
       _fuelStats = fuelStats;
