@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#1C1917</color>
+
+    <!-- Widget renkleri (gece varyantları values-night/colors.xml) -->
+    <color name="widget_card_bg">#FFFFFF</color>
+    <color name="widget_thumb_bg">#F5F5F4</color>
+    <color name="widget_text_primary">#1C1917</color>
+    <color name="widget_text_secondary">#78716C</color>
+    <color name="widget_text_tertiary">#A8A29E</color>
+    <color name="widget_divider">#1A000000</color>
+    <color name="widget_accent">#16A34A</color>
 </resources>

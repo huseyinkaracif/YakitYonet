@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/vehicle.dart';
@@ -62,7 +63,7 @@ class WidgetService {
     } catch (e) {
       // Widget güncelleme başarısız olsa bile uygulamanın çökmemesi için
       // hatayı yakalıyoruz. Widget henüz ekranda olmayabilir.
-      print('Widget güncelleme hatası (normal olabilir): $e');
+      debugPrint('Widget güncelleme hatası (normal olabilir): $e');
     }
   }
 

@@ -37,7 +37,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Araç Seçilmedi"
-                android:textColor="#1C1917"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -47,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text=""
-                android:textColor="#78716C"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="end"
                 android:text="—"
-                android:textColor="#16A34A"
+                android:textColor="@color/widget_accent"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -75,7 +75,7 @@
                 android:layout_marginTop="2dp"
                 android:gravity="end"
                 android:text="—"
-                android:textColor="#78716C"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="11sp" />
 
             <TextView
@@ -85,7 +85,7 @@
                 android:layout_marginTop="2dp"
                 android:gravity="end"
                 android:text="—"
-                android:textColor="#A8A29E"
+                android:textColor="@color/widget_text_tertiary"
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
@@ -96,7 +96,7 @@
         android:layout_height="1dp"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="8dp"
-        android:background="#1A000000" />
+        android:background="@color/widget_divider" />
 
     <!-- Add Fuel Button -->
     <TextView
