@@ -21,3 +21,13 @@
 -keep class com.google.auth.** { *; }
 -dontwarn com.google.api.**
 -dontwarn com.google.auth.**
+
+# ML Kit — consumer kuralları genelde yeterli, güvence için tümünü koru
+-keep class com.google.mlkit.** { *; }
+
+# flutter_local_notifications — zamanlanmış bildirimler Gson ile serileştiriliyor
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
+-keepattributes Signature
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep public class * implements java.lang.reflect.Type

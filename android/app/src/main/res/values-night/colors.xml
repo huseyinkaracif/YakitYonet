@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget renkleri — karanlık tema -->
+    <color name="widget_card_bg">#1C1917</color>
+    <color name="widget_thumb_bg">#292524</color>
+    <color name="widget_text_primary">#FAFAF9</color>
+    <color name="widget_text_secondary">#A8A29E</color>
+    <color name="widget_text_tertiary">#78716C</color>
+    <color name="widget_divider">#1AFFFFFF</color>
+    <color name="widget_accent">#22C55E</color>
+</resources>
