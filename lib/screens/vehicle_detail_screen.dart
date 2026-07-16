@@ -4,6 +4,7 @@ import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
 import '../services/widget_service.dart';
+import 'add_vehicle_screen.dart';
 import 'tabs/fuel_tab.dart';
 import 'tabs/maintenance_tab.dart';
 import 'tabs/insurance_tax_tab.dart';
@@ -11,11 +12,13 @@ import 'tabs/insurance_tax_tab.dart';
 class VehicleDetailScreen extends StatefulWidget {
   final int vehicleId;
   final bool openAddFuel;
+  final int initialTab;
 
   const VehicleDetailScreen({
-    super.key, 
+    super.key,
     required this.vehicleId,
     this.openAddFuel = false,
+    this.initialTab = 0,
   });
 
   @override
@@ -32,7 +35,11 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 2),
+    );
     _loadVehicle();
     _loadDefaultStatus();
   }
@@ -180,6 +187,13 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                             onPressed: _toggleDefault,
                           ),
                           IconButton(
+                            tooltip: 'Aracı Düzenle',
+                            icon: Icon(Icons.edit_rounded,
+                                color: Theme.of(context).iconTheme.color,
+                                size: 22),
+                            onPressed: () => _editVehicle(vehicle),
+                          ),
+                          IconButton(
                             icon: const Icon(Icons.delete_outline_rounded,
                                 color: AppTheme.dangerColor, size: 22),
                             onPressed: () => _confirmDelete(vehicle),
@@ -230,8 +244,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
                                 _infoChip(
                                   context: context,
                                   label: 'Son KM',
-                                  value:
-                                      '${vehicle.currentKm.toStringAsFixed(0)}',
+                                  value: vehicle.currentKm.toStringAsFixed(0),
                                   icon: Icons.speed_rounded,
                                   color: AppTheme.accent,
                                 ),
@@ -400,17 +413,27 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
     );
   }
 
+  Future<void> _editVehicle(Vehicle vehicle) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddVehicleScreen(vehicle: vehicle),
+      ),
+    );
+    _loadVehicle();
+  }
+
   void _confirmDelete(Vehicle vehicle) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Aracı Sil'),
         content: Text(
           '${vehicle.name} aracını ve tüm verilerini silmek istediğinize emin misiniz?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('İptal'),
           ),
           ElevatedButton(
@@ -418,11 +441,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen>
               backgroundColor: AppTheme.dangerColor,
             ),
             onPressed: () async {
+              Navigator.pop(dialogContext);
               await DatabaseHelper.instance.deleteVehicle(vehicle.id!);
-              if (mounted) {
-                Navigator.pop(context);
-                Navigator.pop(context, true);
-              }
+              if (!mounted) return;
+              Navigator.pop(context, true);
             },
             child: const Text('Sil', style: TextStyle(color: Colors.white)),
           ),

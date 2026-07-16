@@ -7,6 +7,7 @@ import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
 import '../services/fuel_price_service.dart';
+import '../utils/parsing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TripScreen extends StatefulWidget {
@@ -142,9 +143,9 @@ class _TripScreenState extends State<TripScreen>
   }
 
   void _onInputChange() {
-    final km = double.tryParse(_kmCtrl.text.replaceAll(',', '.'));
-    final price = double.tryParse(_priceCtrl.text.replaceAll(',', '.'));
-    final consum = double.tryParse(_consumCtrl.text.replaceAll(',', '.'));
+    final km = parseFlexibleDouble(_kmCtrl.text);
+    final price = parseFlexibleDouble(_priceCtrl.text);
+    final consum = parseFlexibleDouble(_consumCtrl.text);
     final ready = km != null && km > 0 && price != null && price > 0 && consum != null;
     
     // Autofill iptalini buradan kaldırdık çünkü text alanı her güncellendiğinde burası çağrılıyor
@@ -160,9 +161,9 @@ class _TripScreenState extends State<TripScreen>
     }
   }
 
-  double? get _km => double.tryParse(_kmCtrl.text.replaceAll(',', '.'));
-  double? get _price => double.tryParse(_priceCtrl.text.replaceAll(',', '.'));
-  double? get _consum => double.tryParse(_consumCtrl.text.replaceAll(',', '.'));
+  double? get _km => parseFlexibleDouble(_kmCtrl.text);
+  double? get _price => parseFlexibleDouble(_priceCtrl.text);
+  double? get _consum => parseFlexibleDouble(_consumCtrl.text);
 
   double get _liters {
     final km = _km ?? 0;
@@ -183,6 +184,36 @@ class _TripScreenState extends State<TripScreen>
     final tank = vehicle?.tankCapacity ?? 50.0;
     if (tank <= 0 || _liters <= 0) return 0;
     return (_liters / tank).ceil();
+  }
+
+  bool get _hasSharedTarget =>
+      widget.initialLat != null && widget.initialLng != null;
+
+  Future<void> _openMap() async {
+    final lat = widget.initialLat;
+    final lng = widget.initialLng;
+    // Paylaşılan hedef varsa haritayı o noktada aç
+    final geoUri = _hasSharedTarget
+        ? Uri.parse('geo:$lat,$lng?q=$lat,$lng(Hedef)')
+        : Uri.parse('geo:0,0?q=');
+    final webUri = _hasSharedTarget
+        ? Uri.parse('https://maps.google.com/?q=$lat,$lng')
+        : Uri.parse('https://maps.google.com/');
+    try {
+      if (await launchUrl(geoUri, mode: LaunchMode.externalApplication)) {
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (await launchUrl(webUri, mode: LaunchMode.externalApplication)) {
+        return;
+      }
+    } catch (_) {}
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harita uygulaması açılamadı')),
+      );
+    }
   }
 
   @override
@@ -404,25 +435,7 @@ class _TripScreenState extends State<TripScreen>
                 const Text('Seyahat Bilgileri',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textHint)),
                 InkWell(
-                  onTap: () async {
-                    // Cihazdaki harita uygulamasını aç (Google Maps veya Apple Maps)
-                    final url = Uri.parse('geo:0,0?q='); // Platformun harita uygulamasını tetikler
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url);
-                    } else {
-                      // Yedeği, platformun tarayıcısında Google Maps açmak:
-                      final fallbackUrl = Uri.parse('https://maps.google.com/');
-                      if (await canLaunchUrl(fallbackUrl)) {
-                        await launchUrl(fallbackUrl, mode: LaunchMode.externalApplication);
-                      } else {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Harita uygulaması açılamadı')),
-                          );
-                        }
-                      }
-                    }
-                  },
+                  onTap: _openMap,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -432,10 +445,11 @@ class _TripScreenState extends State<TripScreen>
                       border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
                     ),
                     child: Row(
-                      children: const [
-                        Icon(Icons.map_rounded, size: 16, color: AppTheme.accent),
-                        SizedBox(width: 6),
-                        Text('Haritayı Aç', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                      children: [
+                        const Icon(Icons.map_rounded, size: 16, color: AppTheme.accent),
+                        const SizedBox(width: 6),
+                        Text(_hasSharedTarget ? 'Hedefi Aç' : 'Haritayı Aç',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
                       ],
                     ),
                   ),

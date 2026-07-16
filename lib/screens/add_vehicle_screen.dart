@@ -6,9 +6,13 @@ import 'package:path/path.dart' as p;
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
+import '../utils/parsing.dart';
 
 class AddVehicleScreen extends StatefulWidget {
-  const AddVehicleScreen({super.key});
+  /// Dolu gelirse ekran düzenleme modunda açılır.
+  final Vehicle? vehicle;
+
+  const AddVehicleScreen({super.key, this.vehicle});
 
   @override
   State<AddVehicleScreen> createState() => _AddVehicleScreenState();
@@ -24,6 +28,25 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   bool _saving = false;
 
   final List<String> _fuelTypes = ['Benzin', 'Dizel', 'LPG', 'Elektrik'];
+
+  bool get _isEditing => widget.vehicle != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final v = widget.vehicle;
+    if (v != null) {
+      _nameController.text = v.name;
+      _kmController.text = v.currentKm.toStringAsFixed(0);
+      _tankController.text = v.tankCapacity % 1 == 0
+          ? v.tankCapacity.toStringAsFixed(0)
+          : v.tankCapacity.toString();
+      _fuelType = v.fuelType;
+      if (v.imagePath != null && File(v.imagePath!).existsSync()) {
+        _image = File(v.imagePath!);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -45,7 +68,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   void _showImagePicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).dialogBackgroundColor,
+      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -169,25 +192,58 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
 
   Future<void> _saveVehicle() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final km = parseFlexibleInt(_kmController.text);
+    final tank = parsePositiveDouble(_tankController.text);
+    if (km == null || tank == null) return;
+
     setState(() => _saving = true);
 
     try {
-      String? imagePath;
-      if (_image != null) imagePath = await _saveImage(_image!);
+      final existing = widget.vehicle;
+      String? imagePath = existing?.imagePath;
+      if (_image != null && _image!.path != existing?.imagePath) {
+        imagePath = await _saveImage(_image!);
+        // Yeni görsel kaydedildi, eskisini diskten temizle
+        if (existing?.imagePath != null && existing!.imagePath != imagePath) {
+          final oldFile = File(existing.imagePath!);
+          if (await oldFile.exists()) {
+            try {
+              await oldFile.delete();
+            } catch (_) {}
+          }
+        }
+      }
 
-      final vehicle = Vehicle(
-        name: _nameController.text.trim(),
-        currentKm: double.parse(_kmController.text.trim()),
-        fuelType: _fuelType,
-        tankCapacity: double.parse(_tankController.text.trim()),
-        imagePath: imagePath,
-      );
-
-      await DatabaseHelper.instance.insertVehicle(vehicle);
+      final String vehicleName;
+      if (existing != null) {
+        final updated = existing.copyWith(
+          name: _nameController.text.trim(),
+          currentKm: km.toDouble(),
+          fuelType: _fuelType,
+          tankCapacity: tank,
+          imagePath: imagePath,
+        );
+        await DatabaseHelper.instance.updateVehicle(updated);
+        vehicleName = updated.name;
+      } else {
+        final vehicle = Vehicle(
+          name: _nameController.text.trim(),
+          currentKm: km.toDouble(),
+          fuelType: _fuelType,
+          tankCapacity: tank,
+          imagePath: imagePath,
+        );
+        await DatabaseHelper.instance.insertVehicle(vehicle);
+        vehicleName = vehicle.name;
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${vehicle.name} başarıyla eklendi!')),
+          SnackBar(
+              content: Text(_isEditing
+                  ? '$vehicleName güncellendi!'
+                  : '$vehicleName başarıyla eklendi!')),
         );
         Navigator.pop(context, true);
       }
@@ -219,7 +275,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     onPressed: () => Navigator.pop(context),
                   ),
                   Text(
-                    'Yeni Araç Ekle',
+                    _isEditing ? 'Aracı Düzenle' : 'Yeni Araç Ekle',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
@@ -337,7 +393,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Kilometre gerekli';
                           }
-                          if (double.tryParse(value.trim()) == null) {
+                          final km = parseFlexibleInt(value);
+                          if (km == null || km < 0) {
                             return 'Geçerli bir sayı girin';
                           }
                           return null;
@@ -414,7 +471,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                       TextFormField(
                         controller: _tankController,
                         style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                        keyboardType: TextInputType.number,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
                           labelText: 'Depo Kapasitesi',
                           prefixIcon: const Icon(
@@ -427,7 +485,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Depo kapasitesi gerekli';
                           }
-                          if (double.tryParse(value.trim()) == null) {
+                          if (parsePositiveDouble(value) == null) {
                             return 'Geçerli bir sayı girin';
                           }
                           return null;
@@ -449,12 +507,14 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Row(
+                              : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.check_rounded, size: 20),
-                                    SizedBox(width: 8),
-                                    Text('Aracı Kaydet'),
+                                    const Icon(Icons.check_rounded, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(_isEditing
+                                        ? 'Aracı Güncelle'
+                                        : 'Aracı Kaydet'),
                                   ],
                                 ),
                         ),

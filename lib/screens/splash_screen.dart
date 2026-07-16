@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -75,11 +74,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg =
+        isDark ? const Color(0xFF1C1917) : const Color(0xFFFAF9F6);
+    final subtitleColor =
+        isDark ? const Color(0xFFA8A29E) : const Color(0xFF78716C);
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFFAF9F6), // warm white background
-        ),
+        decoration: BoxDecoration(color: bg),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -102,6 +104,7 @@ class _SplashScreenState extends State<SplashScreen>
                               size: const Size(140, 140),
                               painter: FuelGaugePainter(
                                 progress: _fuelAnimation.value,
+                                isDark: isDark,
                               ),
                             ),
                             // App icon in the center
@@ -142,10 +145,10 @@ class _SplashScreenState extends State<SplashScreen>
               const SizedBox(height: 8),
               FadeTransition(
                 opacity: _fadeAnimation,
-                child: const Text(
+                child: Text(
                   'Yakıt & Araç Yönetimi',
                   style: TextStyle(
-                    color: Color(0xFF78716C), // stone / textSecondary
+                    color: subtitleColor,
                     fontSize: 14,
                     letterSpacing: 1.5,
                   ),
@@ -173,8 +176,9 @@ class _SplashScreenState extends State<SplashScreen>
 
 class FuelGaugePainter extends CustomPainter {
   final double progress;
+  final bool isDark;
 
-  FuelGaugePainter({required this.progress});
+  FuelGaugePainter({required this.progress, this.isDark = false});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -183,7 +187,9 @@ class FuelGaugePainter extends CustomPainter {
 
     // Arka plan dairesi (boş tank)
     final bgPaint = Paint()
-      ..color = const Color(0xFFE5E1D8) // warm border / borderSubtle
+      ..color = isDark
+          ? const Color(0xFF44403C)
+          : const Color(0xFFE5E1D8) // warm border / borderSubtle
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
     canvas.drawCircle(center, radius, bgPaint);
@@ -240,13 +246,15 @@ class FuelGaugePainter extends CustomPainter {
 
     // İkon için iç kısımdan suyun geçmesini engellemek amaçlı arka plan rengiyle dolgu
     final cutoutPaint = Paint()
-      ..color = const Color(0xFFFAF9F6) // warm white — matches background
+      ..color = isDark
+          ? const Color(0xFF1C1917)
+          : const Color(0xFFFAF9F6) // matches scaffold background
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 0.65, cutoutPaint);
   }
 
   @override
   bool shouldRepaint(covariant FuelGaugePainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -8,12 +9,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../database/database_helper.dart';
 import '../models/vehicle.dart';
+import '../models/insurance_tax_record.dart';
 import '../theme/app_theme.dart';
 import '../services/google_drive_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import 'trip_screen.dart';
+import 'vehicle_detail_screen.dart';
 import '../services/location_sharing_service.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/background_watermark.dart';
@@ -31,6 +34,7 @@ class VehicleListScreen extends StatefulWidget {
 class _VehicleListScreenState extends State<VehicleListScreen> {
   bool _handledWidgetUri = false;
   List<Vehicle> _vehicles = [];
+  List<_UpcomingPayment> _upcomingPayments = [];
   Map<int, Map<String, dynamic>> _fuelStats = {};
   bool _loading = true;
   bool _isBannerView = true;
@@ -39,6 +43,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   // ignore: cancel_subscriptions
   late final dynamic _widgetClickSub;
   late final AppLifecycleListener _lifecycleListener;
+
+  int get _panelOffset => _upcomingPayments.isEmpty ? 0 : 1;
 
   @override
   void initState() {
@@ -75,6 +81,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       }
     }
 
+    final upcoming = await _loadUpcomingPayments(vehicles);
+
     int? defaultId = await WidgetService.getDefaultVehicleId();
 
     if (vehicles.isNotEmpty) {
@@ -107,12 +115,39 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
 
     setState(() {
       _vehicles = vehicles;
+      _upcomingPayments = upcoming;
       _fuelStats = stats;
       _defaultVehicleId = defaultId;
       _loading = false;
     });
 
     _handleWidgetIntent();
+  }
+
+  /// Tüm araçlarda 30 gün içinde bitecek veya süresi geçmiş
+  /// sigorta/vergi kayıtlarını toplar.
+  Future<List<_UpcomingPayment>> _loadUpcomingPayments(
+      List<Vehicle> vehicles) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final upcoming = <_UpcomingPayment>[];
+    for (var v in vehicles) {
+      if (v.id == null) continue;
+      final records =
+          await DatabaseHelper.instance.getInsuranceTaxRecords(v.id!);
+      for (var r in records) {
+        final expiry = r.expiryDate;
+        if (expiry == null) continue;
+        final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
+        final daysLeft = expiryDay.difference(today).inDays;
+        if (daysLeft <= 30) {
+          upcoming.add(
+              _UpcomingPayment(vehicle: v, record: r, daysLeft: daysLeft));
+        }
+      }
+    }
+    upcoming.sort((a, b) => a.daysLeft.compareTo(b.daysLeft));
+    return upcoming;
   }
 
   void _handleWidgetIntent() {
@@ -168,16 +203,26 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                                 ? ListView.builder(
                                     key: const ValueKey('banner'),
                                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                                    itemCount: _vehicles.length,
-                                    itemBuilder: (context, index) =>
-                                        _buildBannerCard(_vehicles[index]),
+                                    itemCount: _vehicles.length + _panelOffset,
+                                    itemBuilder: (context, index) {
+                                      if (_panelOffset > 0 && index == 0) {
+                                        return _buildUpcomingPaymentsCard();
+                                      }
+                                      return _buildBannerCard(
+                                          _vehicles[index - _panelOffset]);
+                                    },
                                   )
                                 : ListView.builder(
                                     key: const ValueKey('list'),
                                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                                    itemCount: _vehicles.length,
-                                    itemBuilder: (context, index) =>
-                                        _buildListRow(_vehicles[index]),
+                                    itemCount: _vehicles.length + _panelOffset,
+                                    itemBuilder: (context, index) {
+                                      if (_panelOffset > 0 && index == 0) {
+                                        return _buildUpcomingPaymentsCard();
+                                      }
+                                      return _buildListRow(
+                                          _vehicles[index - _panelOffset]);
+                                    },
                                   ),
                           ),
                         ),
@@ -528,6 +573,140 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 fontSize: 14,
                 height: 1.5,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Yaklaşan Ödemeler ──────────────────────────────────────────────────────
+
+  Widget _buildUpcomingPaymentsCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderFor(context), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_active_rounded,
+                    size: 16, color: AppTheme.insurColor),
+                const SizedBox(width: 8),
+                Text(
+                  'Yaklaşan Ödemeler',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ..._upcomingPayments.map(_buildUpcomingPaymentRow),
+          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingPaymentRow(_UpcomingPayment payment) {
+    final urgent = payment.daysLeft <= 7;
+    final color = urgent ? AppTheme.dangerColor : AppTheme.insurColor;
+    final String countdown;
+    if (payment.daysLeft < 0) {
+      countdown = '${-payment.daysLeft} gün gecikti';
+    } else if (payment.daysLeft == 0) {
+      countdown = 'Bugün son gün';
+    } else {
+      countdown = '${payment.daysLeft} gün kaldı';
+    }
+    final expiry = payment.record.expiryDate!;
+
+    return InkWell(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VehicleDetailScreen(
+              vehicleId: payment.vehicle.id!,
+              initialTab: 2,
+            ),
+          ),
+        );
+        _loadVehicles();
+      },
+      child: Container(
+        color: urgent
+            ? AppTheme.dangerColor.withValues(alpha: 0.06)
+            : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(Icons.shield_rounded, size: 14, color: color),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    payment.vehicle.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    payment.record.type,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textSecondaryFor(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  DateFormat('dd MMM yyyy').format(expiry),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  countdown,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1018,7 +1197,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   void _showAddPhotoDialog(Vehicle vehicle) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).dialogBackgroundColor,
+      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1145,15 +1324,17 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
             'vehicle_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
         final savedImage =
             await image.copy('${vehicleImagesDir.path}/$fileName');
-        final updatedVehicle = Vehicle(
-          id: vehicle.id,
-          name: vehicle.name,
-          currentKm: vehicle.currentKm,
-          fuelType: vehicle.fuelType,
-          tankCapacity: vehicle.tankCapacity,
-          imagePath: savedImage.path,
-        );
+        final oldImagePath = vehicle.imagePath;
+        final updatedVehicle = vehicle.copyWith(imagePath: savedImage.path);
         await DatabaseHelper.instance.updateVehicle(updatedVehicle);
+        if (oldImagePath != null && oldImagePath != savedImage.path) {
+          final oldFile = File(oldImagePath);
+          if (await oldFile.exists()) {
+            try {
+              await oldFile.delete();
+            } catch (_) {}
+          }
+        }
         await _loadVehicles();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1170,23 +1351,21 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     }
   }
 
-  void _exportData() async {
+  Future<void> _exportData() async {
     try {
-      final String? selectedDirectory =
-          await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Dışa aktarılacak klasörü seçin',
-      );
-      if (selectedDirectory == null) return;
       final data = await DatabaseHelper.instance.exportAllData();
       final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final file =
-          File('$selectedDirectory/yakit_yonet_yedek_$dateStr.json');
-      await file.writeAsString(jsonEncode(data));
+      final savedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Yedek dosyasını kaydet',
+        fileName: 'yakit_yonet_yedek_$dateStr.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(utf8.encode(jsonEncode(data))),
+      );
+      if (savedPath == null) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Veriler başarıyla dışa aktarıldı:\n${file.path}')),
+          const SnackBar(content: Text('Veriler başarıyla dışa aktarıldı')),
         );
       }
     } catch (e) {
@@ -1197,17 +1376,94 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     }
   }
 
-  void _importData() async {
+  Future<void> _importData() async {
+    FilePickerResult? result;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: 'İçe aktarılacak yedek dosyasını seçin',
       );
-      if (result == null || result.files.single.path == null) return;
-      final file = File(result.files.single.path!);
-      final String jsonStr = await file.readAsString();
-      final Map<String, dynamic> data = jsonDecode(jsonStr);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Hata: $e')));
+      }
+      return;
+    }
+    if (result == null || result.files.single.path == null) return;
+
+    Map<String, dynamic> data;
+    try {
+      final jsonStr = await File(result.files.single.path!).readAsString();
+      final decoded = jsonDecode(jsonStr);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Geçersiz yedek biçimi');
+      }
+      data = decoded;
+    } catch (_) {
+      if (mounted) _showImportErrorDialog();
+      return;
+    }
+
+    final vehicleCount = (data['vehicles'] as List?)?.length ?? 0;
+    final fuelCount = (data['fuel_records'] as List?)?.length ?? 0;
+    final maintCount = (data['maintenance_records'] as List?)?.length ?? 0;
+    final insurCount = (data['insurance_tax_records'] as List?)?.length ?? 0;
+    String exportDateText = 'Bilinmiyor';
+    final exportDateRaw = data['exportDate'];
+    if (exportDateRaw is String) {
+      final parsed = DateTime.tryParse(exportDateRaw);
+      if (parsed != null) {
+        exportDateText = DateFormat('dd MMM yyyy HH:mm').format(parsed);
+      }
+    }
+
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Yedeği Geri Yükle'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Yedek tarihi: $exportDateText'),
+            const SizedBox(height: 8),
+            Text('Araç: $vehicleCount\n'
+                'Yakıt kaydı: $fuelCount\n'
+                'Bakım kaydı: $maintCount\n'
+                'Sigorta/Vergi kaydı: $insurCount'),
+            const SizedBox(height: 12),
+            const Text(
+              'Mevcut TÜM veriler silinip yerine bu yedek yüklenecek. '
+              'Devam edilsin mi?',
+              style: TextStyle(
+                color: AppTheme.dangerColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.dangerColor,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('İçe Aktar',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
       await DatabaseHelper.instance.importAllData(data);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1224,6 +1480,37 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       }
     }
   }
+
+  void _showImportErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Dosya Okunamadı'),
+        content: const Text(
+          'Seçilen dosya geçerli bir yedek dosyası değil. '
+          'Lütfen "Dışa Aktar" ile oluşturulmuş bir JSON dosyası seçin.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpcomingPayment {
+  final Vehicle vehicle;
+  final InsuranceTaxRecord record;
+  final int daysLeft;
+
+  const _UpcomingPayment({
+    required this.vehicle,
+    required this.record,
+    required this.daysLeft,
+  });
 }
 
 // ── Animated Trip FAB ────────────────────────────────────────────────────────
