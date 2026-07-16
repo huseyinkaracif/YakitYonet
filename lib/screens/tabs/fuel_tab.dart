@@ -6,14 +6,20 @@ import '../../database/database_helper.dart';
 import '../../models/fuel_record.dart';
 import '../../theme/app_theme.dart';
 import '../../services/ocr_service.dart';
+import '../../utils/fuel_math.dart';
+import '../../utils/parsing.dart';
 
 class FuelTab extends StatefulWidget {
   final int vehicleId;
   final VoidCallback onDataChanged;
   final bool openAddDialogOnStart;
 
-  const FuelTab(
-      {super.key, required this.vehicleId, required this.onDataChanged, this.openAddDialogOnStart = false});
+  const FuelTab({
+    super.key,
+    required this.vehicleId,
+    required this.onDataChanged,
+    this.openAddDialogOnStart = false,
+  });
 
   @override
   State<FuelTab> createState() => _FuelTabState();
@@ -33,10 +39,12 @@ class _FuelTabState extends State<FuelTab> {
 
   Future<void> _loadData() async {
     setState(() => _loading = true);
-    final records =
-        await DatabaseHelper.instance.getFuelRecords(widget.vehicleId);
-    final stats =
-        await DatabaseHelper.instance.getVehicleFuelStats(widget.vehicleId);
+    final records = await DatabaseHelper.instance.getFuelRecords(
+      widget.vehicleId,
+    );
+    final stats = await DatabaseHelper.instance.getVehicleFuelStats(
+      widget.vehicleId,
+    );
     setState(() {
       _records = records;
       _stats = stats;
@@ -55,7 +63,8 @@ class _FuelTabState extends State<FuelTab> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppTheme.accent));
+        child: CircularProgressIndicator(color: AppTheme.accent),
+      );
     }
 
     return Container(
@@ -74,21 +83,27 @@ class _FuelTabState extends State<FuelTab> {
                       // Info note
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.accentLight,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color: AppTheme.accent.withValues(alpha: 0.3)),
+                            color: AppTheme.accent.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.info_outline_rounded,
-                                color: AppTheme.accentDark, size: 16),
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              color: AppTheme.accentDark,
+                              size: 16,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Not: Son akaryakıt alımı tüketim hesaplamalarına dahil edilmemiştir.',
+                                'Not: Toplam maliyet ve miktar tüm kayıtları kapsar. Tüketim (L/100km) ardışık tam depo dolumları arasında hesaplanır; bu yüzden tam depo alımlarını doğru işaretleyin.',
                                 style: TextStyle(
                                   color: AppTheme.accentDark,
                                   fontSize: 11,
@@ -101,10 +116,14 @@ class _FuelTabState extends State<FuelTab> {
                       ),
                       const SizedBox(height: 16),
                       _buildChartCard(
-                          'Yakıt Miktarı', _buildPriceQuantityChart()),
+                        'Yakıt Miktarı',
+                        _buildPriceQuantityChart(),
+                      ),
                       const SizedBox(height: 12),
                       _buildChartCard(
-                          'Tüketim (L/100km)', _buildConsumptionChart()),
+                        'Tüketim (L/100km)',
+                        _buildConsumptionChart(),
+                      ),
                       const SizedBox(height: 16),
                       _buildRecordsList(),
                     ],
@@ -120,14 +139,15 @@ class _FuelTabState extends State<FuelTab> {
                 FloatingActionButton.extended(
                   heroTag: 'scan_fab',
                   backgroundColor: AppTheme.surfaceFor(context),
-                  foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                   elevation: 1,
                   onPressed: _scanReceipt,
                   icon: const Icon(Icons.document_scanner_rounded, size: 20),
                   label: const Text(
                     'Fiş Tara',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -157,8 +177,11 @@ class _FuelTabState extends State<FuelTab> {
               color: AppTheme.accentLight,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.local_gas_station_rounded,
-                size: 36, color: AppTheme.accent),
+            child: const Icon(
+              Icons.local_gas_station_rounded,
+              size: 36,
+              color: AppTheme.accent,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -233,8 +256,7 @@ class _FuelTabState extends State<FuelTab> {
     );
   }
 
-  Widget _statTile(
-      String label, String value, IconData icon, Color color) {
+  Widget _statTile(String label, String value, IconData icon, Color color) {
     return Container(
       width: (MediaQuery.of(context).size.width - 40) / 2,
       padding: const EdgeInsets.all(12),
@@ -309,15 +331,18 @@ class _FuelTabState extends State<FuelTab> {
   Widget _buildPriceQuantityChart() {
     if (_records.length < 2) {
       return const Center(
-          child: Text('En az 2 kayıt gerekli',
-              style: TextStyle(color: AppTheme.textHint)));
+        child: Text(
+          'En az 2 kayıt gerekli',
+          style: TextStyle(color: AppTheme.textHint),
+        ),
+      );
     }
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: _records.map((r) => r.liters).reduce((a, b) => a > b ? a : b) *
-            1.3,
+        maxY:
+            _records.map((r) => r.liters).reduce((a, b) => a > b ? a : b) * 1.3,
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
@@ -325,9 +350,10 @@ class _FuelTabState extends State<FuelTab> {
               return BarTooltipItem(
                 '${record.liters.toStringAsFixed(1)} L\n${record.pricePerLiter.toStringAsFixed(2)} ₺/L',
                 const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600),
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               );
             },
           ),
@@ -338,15 +364,17 @@ class _FuelTabState extends State<FuelTab> {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value.toInt() >= _records.length)
+                if (value.toInt() >= _records.length) {
                   return const SizedBox();
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    DateFormat('dd/MM')
-                        .format(_records[value.toInt()].date),
+                    DateFormat('dd/MM').format(_records[value.toInt()].date),
                     style: const TextStyle(
-                        color: AppTheme.textHint, fontSize: 9),
+                      color: AppTheme.textHint,
+                      fontSize: 9,
+                    ),
                   ),
                 );
               },
@@ -359,15 +387,16 @@ class _FuelTabState extends State<FuelTab> {
               reservedSize: 36,
               getTitlesWidget: (value, meta) => Text(
                 value.toInt().toString(),
-                style: const TextStyle(
-                    color: AppTheme.textHint, fontSize: 10),
+                style: const TextStyle(color: AppTheme.textHint, fontSize: 10),
               ),
             ),
           ),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         gridData: FlGridData(
           show: true,
@@ -385,7 +414,8 @@ class _FuelTabState extends State<FuelTab> {
                 color: AppTheme.accent,
                 width: _records.length > 10 ? 10 : 18,
                 borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(5)),
+                  top: Radius.circular(5),
+                ),
               ),
             ],
           );
@@ -395,29 +425,23 @@ class _FuelTabState extends State<FuelTab> {
   }
 
   Widget _buildConsumptionChart() {
-    if (_records.length < 3) {
+    final windows = computeFullTankWindows(_records);
+
+    if (windows.isEmpty) {
       return const Center(
-          child: Text('En az 3 kayıt gerekli',
-              style: TextStyle(color: AppTheme.textHint)));
+        child: Text(
+          'En az 2 tam depo kaydı gerekli',
+          style: TextStyle(color: AppTheme.textHint),
+        ),
+      );
     }
 
-    final points = <FlSpot>[];
-    for (int i = 1; i < _records.length; i++) {
-      final kmDiff = _records[i].km - _records[i - 1].km;
-      if (kmDiff > 0) {
-        final lPer100 = (_records[i].liters / kmDiff) * 100;
-        points.add(FlSpot(i.toDouble(), lPer100));
-      }
-    }
+    final points = <FlSpot>[
+      for (int i = 0; i < windows.length; i++)
+        FlSpot(i.toDouble(), windows[i].litersPer100km),
+    ];
 
-    if (points.isEmpty) {
-      return const Center(
-          child: Text('Yeterli veri yok',
-              style: TextStyle(color: AppTheme.textHint)));
-    }
-
-    final maxY =
-        points.map((p) => p.y).reduce((a, b) => a > b ? a : b) * 1.3;
+    final maxY = points.map((p) => p.y).reduce((a, b) => a > b ? a : b) * 1.3;
 
     return LineChart(
       LineChartData(
@@ -434,15 +458,17 @@ class _FuelTabState extends State<FuelTab> {
               showTitles: true,
               getTitlesWidget: (value, meta) {
                 final idx = value.toInt();
-                if (idx <= 0 || idx >= _records.length) {
+                if (idx < 0 || idx >= windows.length) {
                   return const SizedBox();
                 }
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    DateFormat('dd/MM').format(_records[idx].date),
+                    DateFormat('dd/MM').format(windows[idx].endDate),
                     style: const TextStyle(
-                        color: AppTheme.textHint, fontSize: 9),
+                      color: AppTheme.textHint,
+                      fontSize: 9,
+                    ),
                   ),
                 );
               },
@@ -455,15 +481,16 @@ class _FuelTabState extends State<FuelTab> {
               reservedSize: 36,
               getTitlesWidget: (value, meta) => Text(
                 value.toStringAsFixed(1),
-                style: const TextStyle(
-                    color: AppTheme.textHint, fontSize: 10),
+                style: const TextStyle(color: AppTheme.textHint, fontSize: 10),
               ),
             ),
           ),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         borderData: FlBorderData(show: false),
         minY: 0,
@@ -499,9 +526,10 @@ class _FuelTabState extends State<FuelTab> {
                 return LineTooltipItem(
                   '${spot.y.toStringAsFixed(1)} L/100km',
                   const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600),
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 );
               }).toList();
             },
@@ -528,74 +556,132 @@ class _FuelTabState extends State<FuelTab> {
         ),
         ...List.generate(_records.length, (index) {
           final record = _records[_records.length - 1 - index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceFor(context),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.borderFor(context)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+          final note = record.note?.trim() ?? '';
+          return GestureDetector(
+            onTap: () => _showAddFuelDialog(editRecord: record),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceFor(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.borderFor(context)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.local_gas_station_rounded,
+                      size: 16,
+                      color: AppTheme.accent,
+                    ),
                   ),
-                  child: const Icon(Icons.local_gas_station_rounded,
-                      size: 16, color: AppTheme.accent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                DateFormat('dd MMM yyyy').format(record.date),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (!record.fullTank) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.insurColor.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Kısmi',
+                                  style: TextStyle(
+                                    color: AppTheme.insurColor,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${record.liters.toStringAsFixed(1)} L  ·  ${record.pricePerLiter.toStringAsFixed(2)} ₺/L',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (note.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            note,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.textHint,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        DateFormat('dd MMM yyyy').format(record.date),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                        '${record.totalCost.toStringAsFixed(0)} ₺',
+                        style: const TextStyle(
+                          color: AppTheme.accent,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        '${record.liters.toStringAsFixed(1)} L  ·  ${record.pricePerLiter.toStringAsFixed(2)} ₺/L',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                          fontSize: 12,
+                        '${record.km.toStringAsFixed(0)} km',
+                        style: const TextStyle(
+                          color: AppTheme.textHint,
+                          fontSize: 11,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${record.totalCost.toStringAsFixed(0)} ₺',
-                      style: const TextStyle(
-                        color: AppTheme.accent,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => _confirmDeleteRecord(record),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: AppTheme.textHint,
                     ),
-                    Text(
-                      '${record.km.toStringAsFixed(0)} km',
-                      style: const TextStyle(
-                          color: AppTheme.textHint, fontSize: 11),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () => _confirmDeleteRecord(record),
-                  child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppTheme.textHint),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           );
         }),
@@ -623,8 +709,10 @@ class _FuelTabState extends State<FuelTab> {
               children: [
                 CircularProgressIndicator(color: AppTheme.accent),
                 SizedBox(height: 16),
-                Text('Fiş okunuyor…',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  'Fiş okunuyor…',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
             ),
           ),
@@ -646,20 +734,26 @@ class _FuelTabState extends State<FuelTab> {
   /// Shows a dedicated verification popup after OCR, allowing user to
   /// check / correct extracted fields before saving.
   void _showOcrResultDialog(OcrResult result) {
-    DateTime selectedDate = result.date ?? DateTime.now();
-    final dateController =
-        TextEditingController(text: DateFormat('dd/MM/yyyy').format(selectedDate));
+    final now = DateTime.now();
+    DateTime selectedDate = result.date ?? now;
+    if (selectedDate.isAfter(now)) selectedDate = now;
+    final dateController = TextEditingController(
+      text: DateFormat('dd/MM/yyyy').format(selectedDate),
+    );
     final kmController = TextEditingController();
-    final litersController =
-        TextEditingController(text: result.liters?.toStringAsFixed(3) ?? '');
-    final totalController =
-        TextEditingController(text: result.totalCost?.toStringAsFixed(2) ?? '');
+    final litersController = TextEditingController(
+      text: result.liters?.toStringAsFixed(3) ?? '',
+    );
+    final totalController = TextEditingController(
+      text: result.totalCost?.toStringAsFixed(2) ?? '',
+    );
+    final noteController = TextEditingController();
     bool fullTank = true;
 
     double? calcPricePerLiter(String litStr, String totStr) {
-      final l = double.tryParse(litStr);
-      final t = double.tryParse(totStr);
-      if (l != null && t != null && l > 0) return t / l;
+      final l = parsePositiveDouble(litStr);
+      final t = parseFlexibleDouble(totStr);
+      if (l != null && t != null) return t / l;
       return null;
     }
 
@@ -669,14 +763,18 @@ class _FuelTabState extends State<FuelTab> {
         builder: (ctx, setS) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           // Prefer directly parsed pricePerLiter; fall back to computed
-          final ppl = result.pricePerLiter ??
+          final ppl =
+              result.pricePerLiter ??
               calcPricePerLiter(litersController.text, totalController.text);
           return AlertDialog(
             backgroundColor: AppTheme.surfaceFor(ctx),
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: Row(
               children: [
                 Container(
@@ -685,8 +783,11 @@ class _FuelTabState extends State<FuelTab> {
                     color: AppTheme.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.document_scanner_rounded,
-                      color: AppTheme.accent, size: 20),
+                  child: const Icon(
+                    Icons.document_scanner_rounded,
+                    color: AppTheme.accent,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -731,12 +832,16 @@ class _FuelTabState extends State<FuelTab> {
                         color: AppTheme.accent.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: AppTheme.accent.withValues(alpha: 0.35)),
+                          color: AppTheme.accent.withValues(alpha: 0.35),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded,
-                              color: AppTheme.accent, size: 16),
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppTheme.accent,
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -764,8 +869,9 @@ class _FuelTabState extends State<FuelTab> {
                       if (date != null) {
                         setS(() {
                           selectedDate = date;
-                          dateController.text =
-                              DateFormat('dd/MM/yyyy').format(date);
+                          dateController.text = DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(date);
                         });
                       }
                     },
@@ -773,11 +879,15 @@ class _FuelTabState extends State<FuelTab> {
                       child: TextField(
                         controller: dateController,
                         style: TextStyle(
-                            color: Theme.of(ctx).colorScheme.onSurface),
+                          color: Theme.of(ctx).colorScheme.onSurface,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Tarih',
-                          prefixIcon: Icon(Icons.calendar_today_rounded,
-                              color: AppTheme.textHint, size: 18),
+                          prefixIcon: Icon(
+                            Icons.calendar_today_rounded,
+                            color: AppTheme.textHint,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
@@ -787,12 +897,16 @@ class _FuelTabState extends State<FuelTab> {
                   TextField(
                     controller: kmController,
                     keyboardType: TextInputType.number,
-                    style:
-                        TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
+                    style: TextStyle(
+                      color: Theme.of(ctx).colorScheme.onSurface,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Kilometre *',
-                      prefixIcon: Icon(Icons.speed_rounded,
-                          color: AppTheme.textHint, size: 18),
+                      prefixIcon: Icon(
+                        Icons.speed_rounded,
+                        color: AppTheme.textHint,
+                        size: 18,
+                      ),
                       suffixText: 'km',
                     ),
                   ),
@@ -802,14 +916,20 @@ class _FuelTabState extends State<FuelTab> {
                       Expanded(
                         child: TextField(
                           controller: litersController,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           style: TextStyle(
-                              color: Theme.of(ctx).colorScheme.onSurface),
+                            color: Theme.of(ctx).colorScheme.onSurface,
+                          ),
                           onChanged: (_) => setS(() {}),
                           decoration: InputDecoration(
                             labelText: 'Litre',
-                            prefixIcon: const Icon(Icons.water_drop_rounded,
-                                color: AppTheme.textHint, size: 18),
+                            prefixIcon: const Icon(
+                              Icons.water_drop_rounded,
+                              color: AppTheme.textHint,
+                              size: 18,
+                            ),
                             suffixText: 'L',
                             filled: result.liters != null,
                             fillColor: result.liters != null
@@ -822,14 +942,20 @@ class _FuelTabState extends State<FuelTab> {
                       Expanded(
                         child: TextField(
                           controller: totalController,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           style: TextStyle(
-                              color: Theme.of(ctx).colorScheme.onSurface),
+                            color: Theme.of(ctx).colorScheme.onSurface,
+                          ),
                           onChanged: (_) => setS(() {}),
                           decoration: InputDecoration(
                             labelText: 'Toplam ₺',
-                            prefixIcon: const Icon(Icons.payments_rounded,
-                                color: AppTheme.textHint, size: 18),
+                            prefixIcon: const Icon(
+                              Icons.payments_rounded,
+                              color: AppTheme.textHint,
+                              size: 18,
+                            ),
                             filled: result.totalCost != null,
                             fillColor: result.totalCost != null
                                 ? AppTheme.successColor.withValues(alpha: 0.07)
@@ -844,17 +970,23 @@ class _FuelTabState extends State<FuelTab> {
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.accent.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: AppTheme.accent.withValues(alpha: 0.25)),
+                          color: AppTheme.accent.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.local_gas_station_rounded,
-                              color: AppTheme.accent, size: 16),
+                          const Icon(
+                            Icons.local_gas_station_rounded,
+                            color: AppTheme.accent,
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Birim Fiyat: ${ppl.toStringAsFixed(2)} ₺/L',
@@ -870,11 +1002,29 @@ class _FuelTabState extends State<FuelTab> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 10),
+                  // Optional note / station
+                  TextField(
+                    controller: noteController,
+                    style: TextStyle(
+                      color: Theme.of(ctx).colorScheme.onSurface,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Not / İstasyon (opsiyonel)',
+                      prefixIcon: Icon(
+                        Icons.edit_note_rounded,
+                        color: AppTheme.textHint,
+                        size: 18,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   // Full tank toggle
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceAltFor(ctx),
                       borderRadius: BorderRadius.circular(8),
@@ -882,8 +1032,11 @@ class _FuelTabState extends State<FuelTab> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.local_gas_station_rounded,
-                            color: AppTheme.textHint, size: 18),
+                        const Icon(
+                          Icons.local_gas_station_rounded,
+                          color: AppTheme.textHint,
+                          size: 18,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -913,34 +1066,38 @@ class _FuelTabState extends State<FuelTab> {
                 icon: const Icon(Icons.save_rounded, size: 16),
                 label: const Text('Kaydet'),
                 onPressed: () async {
-                  final km = double.tryParse(kmController.text);
-                  final liters = double.tryParse(litersController.text);
-                  final total = double.tryParse(totalController.text);
-                  final pricePerLiter =
-                      (liters != null && total != null && liters > 0)
-                          ? total / liters
-                          : null;
-
-                  if (km == null ||
-                      liters == null ||
-                      total == null ||
-                      pricePerLiter == null) {
+                  if (kmController.text.trim().isEmpty ||
+                      litersController.text.trim().isEmpty ||
+                      totalController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text(
-                              'Kilometre, litre ve tutar zorunludur')),
+                        content: Text('Kilometre, litre ve tutar zorunludur'),
+                      ),
                     );
                     return;
                   }
 
+                  final km = parsePositiveDouble(kmController.text);
+                  final liters = parsePositiveDouble(litersController.text);
+                  final total = parsePositiveDouble(totalController.text);
+
+                  if (km == null || liters == null || total == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Geçerli bir sayı girin')),
+                    );
+                    return;
+                  }
+
+                  final note = noteController.text.trim();
                   final record = FuelRecord(
                     vehicleId: widget.vehicleId,
                     date: selectedDate,
                     km: km,
                     liters: liters,
-                    pricePerLiter: pricePerLiter,
+                    pricePerLiter: total / liters,
                     totalCost: total,
                     fullTank: fullTank,
+                    note: note.isEmpty ? null : note,
                   );
                   await DatabaseHelper.instance.insertFuelRecord(record);
                   await _loadData();
@@ -955,31 +1112,48 @@ class _FuelTabState extends State<FuelTab> {
     );
   }
 
-  void _showAddFuelDialog({OcrResult? prefilledData}) {
-    DateTime selectedDate = prefilledData?.date ?? DateTime.now();
-    
+  void _showAddFuelDialog({OcrResult? prefilledData, FuelRecord? editRecord}) {
+    final now = DateTime.now();
+    DateTime selectedDate = editRecord?.date ?? prefilledData?.date ?? now;
+    if (selectedDate.isAfter(now)) selectedDate = now;
+
     final dateController = TextEditingController(
-        text: DateFormat('dd/MM/yyyy').format(selectedDate));
-    final kmController = TextEditingController();
+      text: DateFormat('dd/MM/yyyy').format(selectedDate),
+    );
+    final kmController = TextEditingController(
+      text: editRecord?.km.toStringAsFixed(0) ?? '',
+    );
     final litersController = TextEditingController(
-        text: prefilledData?.liters?.toStringAsFixed(2) ?? '');
+      text:
+          editRecord?.liters.toStringAsFixed(2) ??
+          prefilledData?.liters?.toStringAsFixed(2) ??
+          '',
+    );
     final totalController = TextEditingController(
-        text: prefilledData?.totalCost?.toStringAsFixed(2) ?? '');
-    
-    double? initialPrice;
-    if (prefilledData?.totalCost != null && prefilledData?.liters != null) {
+      text:
+          editRecord?.totalCost.toStringAsFixed(2) ??
+          prefilledData?.totalCost?.toStringAsFixed(2) ??
+          '',
+    );
+
+    double? initialPrice = editRecord?.pricePerLiter;
+    if (initialPrice == null &&
+        prefilledData?.totalCost != null &&
+        prefilledData?.liters != null) {
       initialPrice = prefilledData!.totalCost! / prefilledData.liters!;
     }
     final priceController = TextEditingController(
-        text: initialPrice?.toStringAsFixed(2) ?? '');
-    
-    bool fullTank = true;
+      text: initialPrice?.toStringAsFixed(2) ?? '',
+    );
+    final noteController = TextEditingController(text: editRecord?.note ?? '');
+
+    bool fullTank = editRecord?.fullTank ?? true;
 
     void calcFromLiters(String _) {
-      final liters = double.tryParse(litersController.text);
-      if (liters == null || liters <= 0) return;
-      final price = double.tryParse(priceController.text);
-      final total = double.tryParse(totalController.text);
+      final liters = parsePositiveDouble(litersController.text);
+      if (liters == null) return;
+      final price = parseFlexibleDouble(priceController.text);
+      final total = parseFlexibleDouble(totalController.text);
       if (price != null) {
         totalController.text = (liters * price).toStringAsFixed(2);
       } else if (total != null) {
@@ -988,10 +1162,10 @@ class _FuelTabState extends State<FuelTab> {
     }
 
     void calcFromPrice(String _) {
-      final price = double.tryParse(priceController.text);
-      if (price == null || price <= 0) return;
-      final liters = double.tryParse(litersController.text);
-      final total = double.tryParse(totalController.text);
+      final price = parsePositiveDouble(priceController.text);
+      if (price == null) return;
+      final liters = parseFlexibleDouble(litersController.text);
+      final total = parseFlexibleDouble(totalController.text);
       if (liters != null) {
         totalController.text = (liters * price).toStringAsFixed(2);
       } else if (total != null) {
@@ -1000,13 +1174,13 @@ class _FuelTabState extends State<FuelTab> {
     }
 
     void calcFromTotal(String _) {
-      final total = double.tryParse(totalController.text);
-      if (total == null || total <= 0) return;
-      final price = double.tryParse(priceController.text);
-      final liters = double.tryParse(litersController.text);
-      if (price != null) {
+      final total = parsePositiveDouble(totalController.text);
+      if (total == null) return;
+      final price = parseFlexibleDouble(priceController.text);
+      final liters = parseFlexibleDouble(litersController.text);
+      if (price != null && price > 0) {
         litersController.text = (total / price).toStringAsFixed(3);
-      } else if (liters != null) {
+      } else if (liters != null && liters > 0) {
         priceController.text = (total / liters).toStringAsFixed(2);
       }
     }
@@ -1021,7 +1195,11 @@ class _FuelTabState extends State<FuelTab> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
           padding: EdgeInsets.fromLTRB(
-              20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+            20,
+            16,
+            20,
+            MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1039,7 +1217,9 @@ class _FuelTabState extends State<FuelTab> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Yeni Yakıt Alımı',
+                  editRecord != null
+                      ? 'Yakıt Kaydını Düzenle'
+                      : 'Yeni Yakıt Alımı',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
@@ -1059,18 +1239,24 @@ class _FuelTabState extends State<FuelTab> {
                     );
                     if (date != null) {
                       selectedDate = date;
-                      dateController.text =
-                          DateFormat('dd/MM/yyyy').format(date);
+                      dateController.text = DateFormat(
+                        'dd/MM/yyyy',
+                      ).format(date);
                     }
                   },
                   child: AbsorbPointer(
                     child: TextField(
                       controller: dateController,
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Tarih',
-                        prefixIcon: Icon(Icons.calendar_today_rounded,
-                            color: AppTheme.textHint, size: 20),
+                        prefixIcon: Icon(
+                          Icons.calendar_today_rounded,
+                          color: AppTheme.textHint,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -1079,11 +1265,16 @@ class _FuelTabState extends State<FuelTab> {
                 TextField(
                   controller: kmController,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Kilometre',
-                    prefixIcon: Icon(Icons.speed_rounded,
-                        color: AppTheme.textHint, size: 20),
+                    prefixIcon: Icon(
+                      Icons.speed_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                     suffixText: 'km',
                   ),
                 ),
@@ -1093,14 +1284,20 @@ class _FuelTabState extends State<FuelTab> {
                     Expanded(
                       child: TextField(
                         controller: litersController,
-                        keyboardType: TextInputType.number,
-                        style:
-                            TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                         onChanged: calcFromLiters,
                         decoration: const InputDecoration(
                           labelText: 'Litre',
-                          prefixIcon: Icon(Icons.water_drop_rounded,
-                              color: AppTheme.textHint, size: 20),
+                          prefixIcon: Icon(
+                            Icons.water_drop_rounded,
+                            color: AppTheme.textHint,
+                            size: 20,
+                          ),
                           suffixText: 'L',
                         ),
                       ),
@@ -1109,14 +1306,20 @@ class _FuelTabState extends State<FuelTab> {
                     Expanded(
                       child: TextField(
                         controller: priceController,
-                        keyboardType: TextInputType.number,
-                        style:
-                            TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                         onChanged: calcFromPrice,
                         decoration: const InputDecoration(
                           labelText: 'Birim Fiyat',
-                          prefixIcon: Icon(Icons.monetization_on_rounded,
-                              color: AppTheme.textHint, size: 20),
+                          prefixIcon: Icon(
+                            Icons.monetization_on_rounded,
+                            color: AppTheme.textHint,
+                            size: 20,
+                          ),
                           suffixText: '₺/L',
                         ),
                       ),
@@ -1126,20 +1329,44 @@ class _FuelTabState extends State<FuelTab> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: totalController,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   onChanged: calcFromTotal,
                   decoration: const InputDecoration(
                     labelText: 'Toplam Tutar',
-                    prefixIcon: Icon(Icons.payments_rounded,
-                        color: AppTheme.textHint, size: 20),
+                    prefixIcon: Icon(
+                      Icons.payments_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                     suffixText: '₺',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Not / İstasyon (opsiyonel)',
+                    prefixIcon: Icon(
+                      Icons.edit_note_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceAltFor(context),
                     borderRadius: BorderRadius.circular(10),
@@ -1147,8 +1374,11 @@ class _FuelTabState extends State<FuelTab> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.local_gas_station_rounded,
-                          color: AppTheme.textHint, size: 18),
+                      const Icon(
+                        Icons.local_gas_station_rounded,
+                        color: AppTheme.textHint,
+                        size: 18,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -1161,8 +1391,7 @@ class _FuelTabState extends State<FuelTab> {
                       ),
                       Switch(
                         value: fullTank,
-                        onChanged: (val) =>
-                            setModalState(() => fullTank = val),
+                        onChanged: (val) => setModalState(() => fullTank = val),
                       ),
                     ],
                   ),
@@ -1170,41 +1399,65 @@ class _FuelTabState extends State<FuelTab> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    final km = double.tryParse(kmController.text);
-                    final liters =
-                        double.tryParse(litersController.text);
-                    final price = double.tryParse(priceController.text);
-                    final total =
-                        double.tryParse(totalController.text);
+                    if (kmController.text.trim().isEmpty ||
+                        litersController.text.trim().isEmpty ||
+                        priceController.text.trim().isEmpty ||
+                        totalController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Lütfen tüm alanları doldurun'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final km = parsePositiveDouble(kmController.text);
+                    final liters = parsePositiveDouble(litersController.text);
+                    final price = parsePositiveDouble(priceController.text);
+                    final total = parsePositiveDouble(totalController.text);
 
                     if (km == null ||
                         liters == null ||
                         price == null ||
                         total == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content:
-                                Text('Lütfen tüm alanları doldurun')),
+                        const SnackBar(content: Text('Geçerli bir sayı girin')),
                       );
                       return;
                     }
 
-                    final record = FuelRecord(
-                      vehicleId: widget.vehicleId,
-                      date: selectedDate,
-                      km: km,
-                      liters: liters,
-                      pricePerLiter: price,
-                      totalCost: total,
-                      fullTank: fullTank,
-                    );
+                    final note = noteController.text.trim();
 
-                    await DatabaseHelper.instance.insertFuelRecord(record);
+                    if (editRecord != null) {
+                      final updated = editRecord.copyWith(
+                        date: selectedDate,
+                        km: km,
+                        liters: liters,
+                        pricePerLiter: price,
+                        totalCost: total,
+                        fullTank: fullTank,
+                        note: note,
+                      );
+                      await DatabaseHelper.instance.updateFuelRecord(updated);
+                    } else {
+                      final record = FuelRecord(
+                        vehicleId: widget.vehicleId,
+                        date: selectedDate,
+                        km: km,
+                        liters: liters,
+                        pricePerLiter: price,
+                        totalCost: total,
+                        fullTank: fullTank,
+                        note: note.isEmpty ? null : note,
+                      );
+                      await DatabaseHelper.instance.insertFuelRecord(record);
+                    }
+
                     await _loadData();
                     widget.onDataChanged();
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   },
-                  child: const Text('Kaydet'),
+                  child: Text(editRecord != null ? 'Güncelle' : 'Kaydet'),
                 ),
               ],
             ),
@@ -1217,24 +1470,43 @@ class _FuelTabState extends State<FuelTab> {
   void _confirmDeleteRecord(FuelRecord record) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('Kaydı Sil'),
         content: const Text(
-            'Bu yakıt kaydını silmek istediğinize emin misiniz?'),
+          'Bu yakıt kaydını silmek istediğinize emin misiniz?',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('İptal'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.dangerColor),
+              backgroundColor: AppTheme.dangerColor,
+            ),
             onPressed: () async {
-              await DatabaseHelper.instance
-                  .deleteFuelRecord(record.id!);
+              Navigator.pop(dialogCtx);
+              await DatabaseHelper.instance.deleteFuelRecord(record.id!);
               await _loadData();
               widget.onDataChanged();
-              if (mounted) Navigator.pop(context);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Kayıt silindi'),
+                  duration: const Duration(seconds: 5),
+                  action: SnackBarAction(
+                    label: 'Geri Al',
+                    onPressed: () async {
+                      // Kayıt haritası eski id'yi taşıdığı için insert
+                      // aynı id ile kaydı geri getirir.
+                      await DatabaseHelper.instance.insertFuelRecord(record);
+                      if (!mounted) return;
+                      await _loadData();
+                      widget.onDataChanged();
+                    },
+                  ),
+                ),
+              );
             },
             child: const Text('Sil', style: TextStyle(color: Colors.white)),
           ),

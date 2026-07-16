@@ -5,13 +5,17 @@ import '../../database/database_helper.dart';
 import '../../models/maintenance_record.dart';
 import '../../theme/app_theme.dart';
 import '../../services/notification_service.dart';
+import '../../utils/parsing.dart';
 
 class MaintenanceTab extends StatefulWidget {
   final int vehicleId;
   final VoidCallback onDataChanged;
 
-  const MaintenanceTab(
-      {super.key, required this.vehicleId, required this.onDataChanged});
+  const MaintenanceTab({
+    super.key,
+    required this.vehicleId,
+    required this.onDataChanged,
+  });
 
   @override
   State<MaintenanceTab> createState() => _MaintenanceTabState();
@@ -29,8 +33,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
 
   Future<void> _loadRecords() async {
     setState(() => _loading = true);
-    final records = await DatabaseHelper.instance
-        .getMaintenanceRecords(widget.vehicleId);
+    final records = await DatabaseHelper.instance.getMaintenanceRecords(
+      widget.vehicleId,
+    );
     setState(() {
       _records = records;
       _loading = false;
@@ -41,7 +46,8 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppTheme.accent));
+        child: CircularProgressIndicator(color: AppTheme.accent),
+      );
     }
 
     return Scaffold(
@@ -80,8 +86,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
               color: AppTheme.maintColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.build_rounded,
-                size: 36, color: AppTheme.maintColor),
+            child: const Icon(
+              Icons.build_rounded,
+              size: 36,
+              color: AppTheme.maintColor,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -115,8 +124,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
               color: AppTheme.maintColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.build_rounded,
-                color: AppTheme.maintColor, size: 22),
+            child: const Icon(
+              Icons.build_rounded,
+              color: AppTheme.maintColor,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 14),
           Column(
@@ -125,9 +137,12 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
               Text(
                 'Toplam Bakım Gideri',
                 style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 3),
               Text(
@@ -155,8 +170,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
               ),
               const Text(
                 'kayıt',
-                style: TextStyle(
-                    color: AppTheme.textHint, fontSize: 11),
+                style: TextStyle(color: AppTheme.textHint, fontSize: 11),
               ),
             ],
           ),
@@ -168,8 +182,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
   Widget _buildCostChart() {
     final Map<String, double> categoryCosts = {};
     for (var r in _records) {
-      categoryCosts[r.category] =
-          (categoryCosts[r.category] ?? 0) + r.cost;
+      categoryCosts[r.category] = (categoryCosts[r.category] ?? 0) + r.cost;
     }
 
     // Use a curated warm palette instead of random Material colors
@@ -185,12 +198,14 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
     final sections = <PieChartSectionData>[];
     int i = 0;
     categoryCosts.forEach((cat, cost) {
-      sections.add(PieChartSectionData(
-        value: cost,
-        title: '',
-        radius: 30,
-        color: chartColors[i % chartColors.length],
-      ));
+      sections.add(
+        PieChartSectionData(
+          value: cost,
+          title: '',
+          radius: 30,
+          color: chartColors[i % chartColors.length],
+        ),
+      );
       i++;
     });
 
@@ -229,8 +244,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                   children: (() {
                     int idx = 0;
                     return categoryCosts.keys.map((cat) {
-                      final color =
-                          chartColors[idx++ % chartColors.length];
+                      final color = chartColors[idx++ % chartColors.length];
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 3),
                         child: Row(
@@ -248,7 +262,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                             Text(
                               cat,
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                                 fontSize: 12,
                               ),
                             ),
@@ -287,69 +303,86 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
           itemCount: _records.length,
           itemBuilder: (context, index) {
             final r = _records[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceFor(context),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.borderFor(context)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: AppTheme.maintColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(9),
+            return GestureDetector(
+              onTap: () => _showAddMaintenanceSheet(record: r),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceFor(context),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.borderFor(context)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: AppTheme.maintColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Icon(
+                        Icons.handyman_rounded,
+                        color: AppTheme.maintColor,
+                        size: 18,
+                      ),
                     ),
-                    child: const Icon(Icons.handyman_rounded,
-                        color: AppTheme.maintColor, size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            r.title,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            r.category,
+                            style: const TextStyle(
+                              color: AppTheme.textHint,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '${DateFormat('dd.MM.yyyy').format(r.date)}  ·  ${r.km.toStringAsFixed(0)} km',
+                            style: const TextStyle(
+                              color: AppTheme.textHint,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          r.title,
+                          '${r.cost.toStringAsFixed(0)} ₺',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          r.category,
-                          style: const TextStyle(
-                            color: AppTheme.textHint,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          '${DateFormat('dd.MM.yyyy').format(r.date)}  ·  ${r.km.toStringAsFixed(0)} km',
-                          style: const TextStyle(
-                              color: AppTheme.textHint, fontSize: 11),
                         ),
                       ],
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${r.cost.toStringAsFixed(0)} ₺',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => _confirmDelete(r),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppTheme.textHint,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -361,37 +394,114 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
   void _confirmDelete(MaintenanceRecord record) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Kaydı Sil'),
         content: const Text(
-            'Bu bakım kaydını silmek istediğinize emin misiniz?'),
+          'Bu bakım kaydını silmek istediğinize emin misiniz?',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('İptal'),
           ),
           TextButton(
-            onPressed: () async {
-              await DatabaseHelper.instance
-                  .deleteMaintenanceRecord(record.id!);
-              Navigator.pop(context);
-              _loadRecords();
-              widget.onDataChanged();
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _deleteRecord(record);
             },
-            child: const Text('Sil',
-                style: TextStyle(color: AppTheme.dangerColor)),
+            child: const Text(
+              'Sil',
+              style: TextStyle(color: AppTheme.dangerColor),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showAddMaintenanceSheet() {
-    final titleController = TextEditingController();
-    final costController = TextEditingController();
-    final kmController = TextEditingController();
-    String category = 'Periyodik Bakım';
-    DateTime date = DateTime.now();
+  Future<void> _deleteRecord(MaintenanceRecord record) async {
+    await DatabaseHelper.instance.deleteMaintenanceRecord(record.id!);
+    await NotificationService().cancelNotification(record.id! + 100000);
+    await _loadRecords();
+    widget.onDataChanged();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Bakım kaydı silindi'),
+        action: SnackBarAction(
+          label: 'Geri Al',
+          onPressed: () => _restoreRecord(record),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restoreRecord(MaintenanceRecord record) async {
+    await DatabaseHelper.instance.insertMaintenanceRecord(record);
+    await _loadRecords();
+    widget.onDataChanged();
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _scheduleMaintenanceReminder({
+    required int recordId,
+    required String maintenanceTitle,
+    required DateTime reminderDate,
+  }) async {
+    final granted = await NotificationService().ensurePermission();
+    if (!granted) {
+      _showMessage('Bildirim izni verilmediği için hatırlatıcı kurulamadı');
+      return;
+    }
+    final scheduled = await NotificationService().scheduleNotification(
+      id: recordId + 100000,
+      title: 'Bakım Hatırlatıcısı',
+      body: '$maintenanceTitle bakımı için zaman geldi.',
+      scheduledDate: DateTime(
+        reminderDate.year,
+        reminderDate.month,
+        reminderDate.day,
+        9,
+      ),
+    );
+    if (!scheduled) {
+      _showMessage(
+        'Hatırlatma tarihi geçmiş olduğu için hatırlatıcı kurulamadı',
+      );
+    }
+  }
+
+  String _formatAmount(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2);
+
+  void _showAddMaintenanceSheet({MaintenanceRecord? record}) {
+    final existing = record;
+    final titleController = TextEditingController(text: existing?.title ?? '');
+    final costController = TextEditingController(
+      text: existing != null ? _formatAmount(existing.cost) : '',
+    );
+    final kmController = TextEditingController(
+      text: existing != null ? existing.km.toStringAsFixed(0) : '',
+    );
+    const categories = [
+      'Periyodik Bakım',
+      'Motor',
+      'Fren',
+      'Lastik',
+      'Elektrik',
+      'Diğer',
+    ];
+    String category = categories.contains(existing?.category)
+        ? existing!.category
+        : categories.first;
+    DateTime date = existing?.date ?? DateTime.now();
 
     bool setReminder = false;
     DateTime reminderDate = DateTime.now().add(const Duration(days: 365));
@@ -428,7 +538,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Yeni Bakım Kaydı',
+                  existing != null
+                      ? 'Bakım Kaydını Düzenle'
+                      : 'Yeni Bakım Kaydı',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
@@ -438,7 +550,9 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 const SizedBox(height: 20),
                 TextField(
                   controller: titleController,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Bakım Başlığı (örn: Yağ Değişimi)',
                   ),
@@ -449,22 +563,28 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                     Expanded(
                       child: TextField(
                         controller: kmController,
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface),
-                        decoration:
-                            const InputDecoration(labelText: 'KM'),
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        decoration: const InputDecoration(labelText: 'KM'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: costController,
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface),
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                         decoration: const InputDecoration(
-                            labelText: 'Tutar (₺)'),
+                          labelText: 'Tutar (₺)',
+                        ),
                       ),
                     ),
                   ],
@@ -472,24 +592,21 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: category,
-                  items: [
-                    'Periyodik Bakım',
-                    'Motor',
-                    'Fren',
-                    'Lastik',
-                    'Elektrik',
-                    'Diğer'
-                  ]
-                      .map((v) => DropdownMenuItem(
+                  items: categories
+                      .map(
+                        (v) => DropdownMenuItem(
                           value: v,
-                          child: Text(v,
-                              style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface))))
+                          child: Text(
+                            v,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      )
                       .toList(),
-                  onChanged: (val) =>
-                      setModalState(() => category = val!),
-                  decoration:
-                      const InputDecoration(labelText: 'Kategori'),
+                  onChanged: (val) => setModalState(() => category = val!),
+                  decoration: const InputDecoration(labelText: 'Kategori'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
@@ -504,13 +621,15 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                       setModalState(() => date = picked);
                     }
                   },
-                  icon: const Icon(Icons.calendar_today_rounded,
-                      size: 16),
+                  icon: const Icon(Icons.calendar_today_rounded, size: 16),
                   label: Text(DateFormat('dd.MM.yyyy').format(date)),
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceAltFor(context),
                     borderRadius: BorderRadius.circular(10),
@@ -520,8 +639,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.notifications_active_rounded,
-                              color: AppTheme.textHint, size: 18),
+                          const Icon(
+                            Icons.notifications_active_rounded,
+                            color: AppTheme.textHint,
+                            size: 18,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -558,15 +680,27 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                             decoration: BoxDecoration(
                               color: AppTheme.surfaceFor(context),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.borderFor(context)),
+                              border: Border.all(
+                                color: AppTheme.borderFor(context),
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.event_available_rounded, size: 16, color: AppTheme.accent),
+                                const Icon(
+                                  Icons.event_available_rounded,
+                                  size: 16,
+                                  color: AppTheme.accent,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Hatırlatma Tarihi: ${DateFormat('dd.MM.yyyy').format(reminderDate)}',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                                 ),
                               ],
                             ),
@@ -580,37 +714,61 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    if (titleController.text.isNotEmpty &&
-                        costController.text.isNotEmpty &&
-                        kmController.text.isNotEmpty) {
-                      final record = MaintenanceRecord(
-                        vehicleId: widget.vehicleId,
-                        date: date,
-                        km: double.parse(kmController.text),
-                        title: titleController.text,
-                        cost: double.parse(costController.text),
-                        category: category,
+                    final title = titleController.text.trim();
+                    if (title.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bakım başlığı gerekli')),
                       );
-                      final id = await DatabaseHelper.instance
-                          .insertMaintenanceRecord(record);
-                          
-                      if (setReminder) {
-                         // Multiply by 1000 or similar to avoid ID collisions with insurance tax tab, 
-                         // or handle better in DB. For now simple shift:
-                         await NotificationService().scheduleNotification(
-                           id: id + 100000, 
-                           title: 'Bakım Hatırlatıcısı',
-                           body: '${titleController.text} bakımı için zaman geldi.',
-                           scheduledDate: reminderDate.add(const Duration(hours: 10)), // Sabah 10
-                         );
-                      }
-                          
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        _loadRecords();
-                        widget.onDataChanged();
-                      }
+                      return;
                     }
+                    final km = parsePositiveDouble(kmController.text);
+                    final cost = parsePositiveDouble(costController.text);
+                    if (km == null || cost == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Geçerli bir sayı girin')),
+                      );
+                      return;
+                    }
+
+                    final navigator = Navigator.of(context);
+                    int recordId;
+                    if (existing != null) {
+                      await DatabaseHelper.instance.updateMaintenanceRecord(
+                        existing.copyWith(
+                          date: date,
+                          km: km,
+                          title: title,
+                          cost: cost,
+                          category: category,
+                        ),
+                      );
+                      recordId = existing.id!;
+                    } else {
+                      recordId = await DatabaseHelper.instance
+                          .insertMaintenanceRecord(
+                            MaintenanceRecord(
+                              vehicleId: widget.vehicleId,
+                              date: date,
+                              km: km,
+                              title: title,
+                              cost: cost,
+                              category: category,
+                            ),
+                          );
+                    }
+
+                    navigator.pop();
+
+                    if (setReminder) {
+                      await _scheduleMaintenanceReminder(
+                        recordId: recordId,
+                        maintenanceTitle: title,
+                        reminderDate: reminderDate,
+                      );
+                    }
+
+                    _loadRecords();
+                    widget.onDataChanged();
                   },
                   child: const Text('Kaydet'),
                 ),

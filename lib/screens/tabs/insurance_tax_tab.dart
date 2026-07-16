@@ -5,12 +5,16 @@ import '../../database/database_helper.dart';
 import '../../models/insurance_tax_record.dart';
 import '../../theme/app_theme.dart';
 import '../../services/notification_service.dart';
+import '../../utils/parsing.dart';
 
 class InsuranceTaxTab extends StatefulWidget {
   final int vehicleId;
   final VoidCallback onDataChanged;
-  const InsuranceTaxTab(
-      {super.key, required this.vehicleId, required this.onDataChanged});
+  const InsuranceTaxTab({
+    super.key,
+    required this.vehicleId,
+    required this.onDataChanged,
+  });
 
   @override
   State<InsuranceTaxTab> createState() => _InsuranceTaxTabState();
@@ -52,8 +56,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
 
   Future<void> _loadData() async {
     setState(() => _loading = true);
-    final records = await DatabaseHelper.instance
-        .getInsuranceTaxRecords(widget.vehicleId);
+    final records = await DatabaseHelper.instance.getInsuranceTaxRecords(
+      widget.vehicleId,
+    );
     setState(() {
       _records = records;
       _loading = false;
@@ -64,7 +69,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppTheme.accent));
+        child: CircularProgressIndicator(color: AppTheme.accent),
+      );
     }
 
     return Stack(
@@ -81,7 +87,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                     _buildChartCard('Tür Dağılımı', _buildPieChart()),
                     const SizedBox(height: 12),
                     _buildChartCard(
-                        'Yıllık Maliyet Trendi', _buildYearlyCostChart()),
+                      'Yıllık Maliyet Trendi',
+                      _buildYearlyCostChart(),
+                    ),
                     const SizedBox(height: 12),
                     _buildRecordsList(),
                   ],
@@ -113,8 +121,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
               color: AppTheme.insurColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.shield_rounded,
-                size: 36, color: AppTheme.insurColor),
+            child: const Icon(
+              Icons.shield_rounded,
+              size: 36,
+              color: AppTheme.insurColor,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -150,8 +161,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.account_balance_wallet_rounded,
-                    color: AppTheme.accent, size: 18),
+                const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: AppTheme.accent,
+                  size: 18,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   '${totalCost.toStringAsFixed(0)} ₺',
@@ -165,9 +179,10 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const Text(
                   'Toplam Maliyet',
                   style: TextStyle(
-                      color: AppTheme.textHint,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500),
+                    color: AppTheme.textHint,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -185,8 +200,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.receipt_long_rounded,
-                    color: AppTheme.maintColor, size: 18),
+                const Icon(
+                  Icons.receipt_long_rounded,
+                  color: AppTheme.maintColor,
+                  size: 18,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   '${_records.length}',
@@ -200,9 +218,10 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const Text(
                   'Kayıt Sayısı',
                   style: TextStyle(
-                      color: AppTheme.textHint,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500),
+                    color: AppTheme.textHint,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -237,8 +256,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
   Widget _buildPieChart() {
     if (_records.isEmpty) {
       return const Center(
-          child: Text('Veri yok',
-              style: TextStyle(color: AppTheme.textHint)));
+        child: Text('Veri yok', style: TextStyle(color: AppTheme.textHint)),
+      );
     }
     final typeSum = <String, double>{};
     for (var r in _records) {
@@ -256,8 +275,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 return PieChartSectionData(
                   color: color,
                   value: e.value,
-                  title:
-                      '${(e.value / total * 100).toStringAsFixed(0)}%',
+                  title: '${(e.value / total * 100).toStringAsFixed(0)}%',
                   radius: 50,
                   titleStyle: const TextStyle(
                     color: Colors.white,
@@ -294,7 +312,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                   Text(
                     e.key,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 11),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -308,8 +330,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
   Widget _buildYearlyCostChart() {
     if (_records.isEmpty) {
       return const Center(
-          child: Text('Veri yok',
-              style: TextStyle(color: AppTheme.textHint)));
+        child: Text('Veri yok', style: TextStyle(color: AppTheme.textHint)),
+      );
     }
     final yearlySum = <String, double>{};
     for (var r in _records) {
@@ -318,8 +340,7 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
     }
     final sortedKeys = yearlySum.keys.toList()..sort();
     if (sortedKeys.isEmpty) return const SizedBox();
-    final maxY =
-        yearlySum.values.reduce((a, b) => a > b ? a : b) * 1.3;
+    final maxY = yearlySum.values.reduce((a, b) => a > b ? a : b) * 1.3;
 
     return BarChart(
       BarChartData(
@@ -336,7 +357,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 return Text(
                   sortedKeys[i],
                   style: const TextStyle(
-                      color: AppTheme.textHint, fontSize: 10),
+                    color: AppTheme.textHint,
+                    fontSize: 10,
+                  ),
                 );
               },
               reservedSize: 24,
@@ -348,15 +371,16 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
               reservedSize: 44,
               getTitlesWidget: (v, m) => Text(
                 '${v.toInt()}₺',
-                style: const TextStyle(
-                    color: AppTheme.textHint, fontSize: 9),
+                style: const TextStyle(color: AppTheme.textHint, fontSize: 9),
               ),
             ),
           ),
           topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
+            sideTitles: SideTitles(showTitles: false),
+          ),
           rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         gridData: FlGridData(
           show: true,
@@ -375,7 +399,8 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 color: AppTheme.insurColor,
                 width: sortedKeys.length > 6 ? 14 : 24,
                 borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(5)),
+                  top: Radius.circular(5),
+                ),
               ),
             ],
           ),
@@ -401,65 +426,76 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
         ),
         ..._records.map((r) {
           final color = _typeColors[r.type] ?? AppTheme.insurColor;
-          final icon =
-              _typeIcons[r.type] ?? Icons.receipt_long_rounded;
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceFor(context),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.borderFor(context)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+          final icon = _typeIcons[r.type] ?? Icons.receipt_long_rounded;
+          return GestureDetector(
+            onTap: () => _showAddDialog(record: r),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceFor(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.borderFor(context)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 16, color: color),
                   ),
-                  child: Icon(icon, size: 16, color: color),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        r.type,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.type,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${DateFormat('dd MMM yyyy').format(r.date)}${r.provider != null ? '  ·  ${r.provider}' : ''}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                          fontSize: 12,
+                        const SizedBox(height: 2),
+                        Text(
+                          '${DateFormat('dd MMM yyyy').format(r.date)}${r.provider != null ? '  ·  ${r.provider}' : ''}',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
+                        if (r.expiryDate != null) ...[
+                          const SizedBox(height: 3),
+                          _buildExpiryInfo(r.expiryDate!),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  '${r.cost.toStringAsFixed(0)} ₺',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                  Text(
+                    '${r.cost.toStringAsFixed(0)} ₺',
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () => _confirmDelete(r),
-                  child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppTheme.textHint),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => _confirmDelete(r),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: AppTheme.textHint,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }),
@@ -467,17 +503,103 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
     );
   }
 
-  void _showAddDialog() {
+  Widget _buildExpiryInfo(DateTime expiryDate) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final expiry = DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
+    final daysLeft = expiry.difference(today).inDays;
+    final formatted = DateFormat('dd.MM.yyyy').format(expiryDate);
+
+    final String text;
+    final Color color;
+    if (daysLeft < 0) {
+      text = 'Süresi doldu · $formatted';
+      color = AppTheme.dangerColor;
+    } else if (daysLeft == 0) {
+      text = 'Bugün bitiyor';
+      color = AppTheme.dangerColor;
+    } else if (daysLeft < 30) {
+      text = '$daysLeft gün kaldı · $formatted';
+      color = AppTheme.accent;
+    } else {
+      text = 'Bitiş: $formatted';
+      color = AppTheme.textHint;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.event_rounded, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: daysLeft < 30 ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  DateTime _reminderTimeFor(DateTime expiry) {
+    final onExpiry = DateTime(expiry.year, expiry.month, expiry.day, 9);
+    final weekBefore = onExpiry.subtract(const Duration(days: 7));
+    return weekBefore.isAfter(DateTime.now()) ? weekBefore : onExpiry;
+  }
+
+  Future<void> _scheduleExpiryReminder(InsuranceTaxRecord record) async {
+    final expiry = record.expiryDate;
+    if (expiry == null || record.id == null) return;
+    final granted = await NotificationService().ensurePermission();
+    if (!granted) {
+      _showMessage('Bildirim izni verilmediği için hatırlatıcı kurulamadı');
+      return;
+    }
+    final scheduled = await NotificationService().scheduleNotification(
+      id: record.id!,
+      title: '${record.type} Hatırlatıcısı',
+      body:
+          '${record.provider ?? 'Sigorta/Vergi'} kaydınızın bitiş tarihi yaklaşıyor.',
+      scheduledDate: _reminderTimeFor(expiry),
+    );
+    if (!scheduled) {
+      _showMessage('Bitiş tarihi geçmiş olduğu için hatırlatıcı kurulamadı');
+    }
+  }
+
+  String _formatAmount(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2);
+
+  void _showAddDialog({InsuranceTaxRecord? record}) {
+    final existing = record;
     final dateCtrl = TextEditingController(
-        text: DateFormat('dd/MM/yyyy').format(DateTime.now()));
-    final costCtrl = TextEditingController();
-    final providerCtrl = TextEditingController();
-    final policyCtrl = TextEditingController();
-    String selectedType = _types.first;
-    DateTime selectedDate = DateTime.now();
-    
-    bool setReminder = false;
-    DateTime reminderDate = DateTime.now().add(const Duration(days: 365));
+      text: DateFormat('dd/MM/yyyy').format(existing?.date ?? DateTime.now()),
+    );
+    final costCtrl = TextEditingController(
+      text: existing != null ? _formatAmount(existing.cost) : '',
+    );
+    final providerCtrl = TextEditingController(text: existing?.provider ?? '');
+    final policyCtrl = TextEditingController(
+      text: existing?.policyNumber ?? '',
+    );
+    String selectedType = _types.contains(existing?.type)
+        ? existing!.type
+        : _types.first;
+    DateTime selectedDate = existing?.date ?? DateTime.now();
+
+    bool setReminder = existing?.expiryDate != null;
+    DateTime expiryDate =
+        existing?.expiryDate ?? DateTime.now().add(const Duration(days: 365));
 
     showModalBottomSheet(
       context: context,
@@ -489,7 +611,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
           padding: EdgeInsets.fromLTRB(
-              20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+            20,
+            16,
+            20,
+            MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -507,7 +633,9 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Yeni Sigorta / Vergi Kaydı',
+                  existing != null
+                      ? 'Sigorta / Vergi Kaydını Düzenle'
+                      : 'Yeni Sigorta / Vergi Kaydı',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
@@ -520,16 +648,24 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                   value: selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Tür',
-                    prefixIcon: Icon(Icons.category_rounded,
-                        color: AppTheme.textHint, size: 20),
+                    prefixIcon: Icon(
+                      Icons.category_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                   ),
                   items: _types
-                      .map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text(t,
-                                style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface)),
-                          ))
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(
+                            t,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setModalState(() => selectedType = v);
@@ -546,18 +682,22 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                     );
                     if (date != null) {
                       selectedDate = date;
-                      dateCtrl.text =
-                          DateFormat('dd/MM/yyyy').format(date);
+                      dateCtrl.text = DateFormat('dd/MM/yyyy').format(date);
                     }
                   },
                   child: AbsorbPointer(
                     child: TextField(
                       controller: dateCtrl,
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Tarih',
-                        prefixIcon: Icon(Icons.calendar_today_rounded,
-                            color: AppTheme.textHint, size: 20),
+                        prefixIcon: Icon(
+                          Icons.calendar_today_rounded,
+                          color: AppTheme.textHint,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -565,38 +705,58 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: costCtrl,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Tutar',
-                    prefixIcon: Icon(Icons.payments_rounded,
-                        color: AppTheme.textHint, size: 20),
+                    prefixIcon: Icon(
+                      Icons.payments_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                     suffixText: '₺',
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: providerCtrl,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Kurum/Şirket (Opsiyonel)',
-                    prefixIcon: Icon(Icons.business_rounded,
-                        color: AppTheme.textHint, size: 20),
+                    prefixIcon: Icon(
+                      Icons.business_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: policyCtrl,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Poliçe No (Opsiyonel)',
-                    prefixIcon: Icon(Icons.tag_rounded,
-                        color: AppTheme.textHint, size: 20),
+                    prefixIcon: Icon(
+                      Icons.tag_rounded,
+                      color: AppTheme.textHint,
+                      size: 20,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceAltFor(context),
                     borderRadius: BorderRadius.circular(10),
@@ -606,8 +766,11 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.notifications_active_rounded,
-                              color: AppTheme.textHint, size: 18),
+                          const Icon(
+                            Icons.notifications_active_rounded,
+                            color: AppTheme.textHint,
+                            size: 18,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -631,12 +794,12 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
-                              initialDate: reminderDate,
-                              firstDate: DateTime.now(),
+                              initialDate: expiryDate,
+                              firstDate: DateTime(2000),
                               lastDate: DateTime(2100),
                             );
                             if (date != null) {
-                              setModalState(() => reminderDate = date);
+                              setModalState(() => expiryDate = date);
                             }
                           },
                           child: Container(
@@ -644,15 +807,27 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                             decoration: BoxDecoration(
                               color: AppTheme.surfaceFor(context),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.borderFor(context)),
+                              border: Border.all(
+                                color: AppTheme.borderFor(context),
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.event_available_rounded, size: 16, color: AppTheme.accent),
+                                const Icon(
+                                  Icons.event_available_rounded,
+                                  size: 16,
+                                  color: AppTheme.accent,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Hatırlatma Tarihi: ${DateFormat('dd MMM yyyy').format(reminderDate)}',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+                                  'Bitiş Tarihi: ${DateFormat('dd MMM yyyy').format(expiryDate)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                                 ),
                               ],
                             ),
@@ -666,14 +841,17 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    final cost = double.tryParse(costCtrl.text);
+                    final cost = parsePositiveDouble(costCtrl.text);
                     if (cost == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Tutar gerekli')),
+                        const SnackBar(content: Text('Geçerli bir sayı girin')),
                       );
                       return;
                     }
-                    final record = InsuranceTaxRecord(
+                    final navigator = Navigator.of(context);
+                    final newExpiry = setReminder ? expiryDate : null;
+                    final saved = InsuranceTaxRecord(
+                      id: existing?.id,
                       vehicleId: widget.vehicleId,
                       date: selectedDate,
                       type: selectedType,
@@ -681,25 +859,35 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
                       provider: providerCtrl.text.trim().isEmpty
                           ? null
                           : providerCtrl.text.trim(),
+                      expiryDate: newExpiry,
                       policyNumber: policyCtrl.text.trim().isEmpty
                           ? null
                           : policyCtrl.text.trim(),
+                      note: existing?.note,
                     );
-                    final id = await DatabaseHelper.instance
-                        .insertInsuranceTaxRecord(record);
-                    
-                    if (setReminder) {
-                       await NotificationService().scheduleNotification(
-                         id: id,
-                         title: '$selectedType Hatırlatıcısı',
-                         body: '${providerCtrl.text.isNotEmpty ? providerCtrl.text : 'Sigorta/Vergi'} kaydınızın yenilenme tarihi geldi.',
-                         scheduledDate: reminderDate.add(const Duration(hours: 9)), // Sabah 9'da hatırlat
-                       );
+
+                    int recordId;
+                    if (existing != null) {
+                      await DatabaseHelper.instance.updateInsuranceTaxRecord(
+                        saved,
+                      );
+                      recordId = existing.id!;
+                      await NotificationService().cancelNotification(recordId);
+                    } else {
+                      recordId = await DatabaseHelper.instance
+                          .insertInsuranceTaxRecord(saved);
+                    }
+
+                    navigator.pop();
+
+                    if (newExpiry != null) {
+                      await _scheduleExpiryReminder(
+                        saved.copyWith(id: recordId),
+                      );
                     }
 
                     await _loadData();
                     widget.onDataChanged();
-                    if (mounted) Navigator.pop(context);
                   },
                   child: const Text('Kaydet'),
                 ),
@@ -714,30 +902,52 @@ class _InsuranceTaxTabState extends State<InsuranceTaxTab> {
   void _confirmDelete(InsuranceTaxRecord record) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Kaydı Sil'),
-        content: const Text(
-            'Bu kaydı silmek istediğinize emin misiniz?'),
+        content: const Text('Bu kaydı silmek istediğinize emin misiniz?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('İptal'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.dangerColor),
-            onPressed: () async {
-              await DatabaseHelper.instance
-                  .deleteInsuranceTaxRecord(record.id!);
-              await _loadData();
-              widget.onDataChanged();
-              if (mounted) Navigator.pop(context);
+              backgroundColor: AppTheme.dangerColor,
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _deleteRecord(record);
             },
-            child: const Text('Sil',
-                style: TextStyle(color: Colors.white)),
+            child: const Text('Sil', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteRecord(InsuranceTaxRecord record) async {
+    await DatabaseHelper.instance.deleteInsuranceTaxRecord(record.id!);
+    await NotificationService().cancelNotification(record.id!);
+    await _loadData();
+    widget.onDataChanged();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Kayıt silindi'),
+        action: SnackBarAction(
+          label: 'Geri Al',
+          onPressed: () => _restoreRecord(record),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restoreRecord(InsuranceTaxRecord record) async {
+    await DatabaseHelper.instance.insertInsuranceTaxRecord(record);
+    if (record.expiryDate != null) {
+      await _scheduleExpiryReminder(record);
+    }
+    await _loadData();
+    widget.onDataChanged();
   }
 }
